@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gate Security Scanner — KLS VDIT Hostel Management System</title>
+  <meta name="description" content="Simple QR Gate Pass scanner for KLS VDIT Hostel Gate Security.">
+
+  <!-- Favicon & Styles -->
+  <link rel="icon" type="image/png" href="assets/hero-illustration.jpg">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+  <style>
+    .security-hero {
+      background: linear-gradient(135deg, #D97706, #B45309);
+      color: white;
+      padding: 24px;
+      border-radius: var(--radius-xl);
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .scanner-box {
+      background: white;
+      border: 2px dashed #D97706;
+      border-radius: 16px;
+      padding: 32px 20px;
+      text-align: center;
+      margin-bottom: 28px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    .btn-action-lg {
+      font-size: 1.25rem;
+      font-weight: 800;
+      padding: 16px 28px;
+      border-radius: 12px;
+      min-width: 200px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn-action-lg:active {
+      transform: scale(0.97);
+    }
+    .status-display {
+      font-size: 1.2rem;
+      font-weight: 800;
+      padding: 12px 20px;
+      border-radius: 8px;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body style="background: #F8FAFC;">
+
+  <!-- Header Header -->
+  <header class="navbar container-fluid" style="background: white; border-bottom: 1px solid var(--color-border); padding: 12px 24px;">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.5rem;">🛡️</span>
+        <div>
+          <h2 style="font-size: 1.15rem; font-weight: 800; color: #D97706; margin: 0;">KLS VDIT Gate Security Portal</h2>
+          <span class="text-muted text-small">Hostel Entry &amp; Exit QR Pass Control</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <button type="button" class="btn btn-secondary btn-sm theme-toggle-btn" onclick="toggleTheme()" style="font-weight: 700;">🌙 Dark</button>
+        <button id="securityLogoutBtn" class="btn btn-secondary btn-sm">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="container" style="max-width: 800px; padding-top: 24px; padding-bottom: 48px;">
+
+    <!-- Top Banner -->
+    <div class="security-hero">
+      <h1 style="font-size: 1.75rem; font-weight: 800; margin: 0; color: white;">🔍 Gate Pass QR Scanner</h1>
+      <p style="margin-top: 6px; opacity: 0.95; font-size: 1rem;">Scan student pass QR code or type token below to verify permission</p>
+    </div>
+
+    <!-- Scanner Input Card -->
+    <div class="scanner-box" style="border-top: 4px solid #D97706; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); background: #ffffff; padding: 24px;">
+      <div style="font-size: 3rem; margin-bottom: 8px;">📷</div>
+      <h3 style="font-size: 1.3rem; font-weight: 800; color: #0F172A; margin-bottom: 12px;">Scan Student QR Code or Enter Pass Token</h3>
+      
+      <!-- Live Camera Preview Container -->
+      <div id="cameraContainer" style="display: none; position: relative; width: 100%; max-width: 480px; margin: 0 auto 16px auto; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+        <video id="qrVideoPreview" autoplay playsinline muted style="width: 100%; height: 280px; object-fit: cover; display: block;"></video>
+        <canvas id="qrCanvas" style="display: none;"></canvas>
+        <div id="scannerOverlay" style="position: absolute; top: 10%; left: 10%; right: 10%; bottom: 10%; border: 3px dashed #10B981; border-radius: 12px; pointer-events: none; opacity: 0.8; box-sizing: border-box;"></div>
+      </div>
+
+      <!-- Camera Action Buttons -->
+      <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;">
+        <button type="button" id="startCameraBtn" class="btn btn-secondary btn-sm" style="background: #10B981; color: white; border-color: #10B981; font-weight: 700; padding: 8px 18px; border-radius: 8px;">
+          📷 Scan QR / Start Camera
+        </button>
+        <button type="button" id="stopCameraBtn" class="btn btn-secondary btn-sm" style="background: #EF4444; color: white; border-color: #EF4444; font-weight: 700; padding: 8px 18px; border-radius: 8px; display: none;">
+          🛑 Stop Camera
+        </button>
+        <button type="button" id="switchCameraBtn" class="btn btn-secondary btn-sm" style="background: #0284C7; color: white; border-color: #0284C7; font-weight: 700; padding: 8px 18px; border-radius: 8px; display: none;">
+          🔄 Switch Camera
+        </button>
+      </div>
+
+      <!-- Camera Status / Error Alert -->
+      <div id="cameraStatusAlert" class="alert alert-error hidden" style="margin-bottom: 16px; font-weight: 700; text-align: center;"></div>
+
+      <div style="display: flex; gap: 10px; max-width: 500px; margin: 0 auto;">
+        <input 
+          type="text" 
+          id="passTokenInput" 
+          class="form-input" 
+          placeholder="e.g. GP-XXXX-XXXX" 
+          style="font-size: 1.1rem; font-weight: 700; text-transform: uppercase; text-align: center; letter-spacing: 1px;"
+          autocomplete="off"
+        >
+        <button id="verifyPassBtn" class="btn btn-primary" style="background: #D97706; border-color: #D97706; font-size: 1.05rem; font-weight: 700; padding: 0 24px;">
+          Verify Pass
+        </button>
+      </div>
+
+      <p class="text-muted text-small" style="margin-top: 10px;">Tip: Camera QR scanner automatically reads and verifies student QR codes</p>
+    </div>
+
+    <!-- Student Pass Details Result Card -->
+    <div id="passDetailsCard" class="table-card hidden" style="background: white; border-radius: 16px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); margin-bottom: 28px;">
+      
+      <div style="text-align: center; border-bottom: 1px solid var(--color-border); padding-bottom: 16px; margin-bottom: 20px;">
+        <div id="passStatusBadge" class="status-display" style="background: #DBEAFE; color: #1E40AF;">APPROVED</div>
+        <h2 id="passStudentName" style="font-size: 1.6rem; font-weight: 800; color: var(--color-primary); margin: 4px 0 0 0;">Student Name</h2>
+        <span id="passStudentUsn" style="font-size: 1rem; font-weight: 700; color: var(--color-text-muted);">USN: 2VD21CS000</span>
+      </div>
+
+      <!-- Student Details Grid -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; font-size: 0.95rem;">
+        <div style="background: #F8FAFC; padding: 12px 16px; border-radius: 8px;">
+          <span style="color: var(--color-text-muted); font-size: 12px; display: block; font-weight: 700;">HOSTEL UNIT</span>
+          <strong id="passHostelUnit" style="font-size: 1.1rem; color: #0284C7;">Boys Hostel</strong>
+        </div>
+
+        <div style="background: #F8FAFC; padding: 12px 16px; border-radius: 8px;">
+          <span style="color: var(--color-text-muted); font-size: 12px; display: block; font-weight: 700;">ROOM NUMBER</span>
+          <strong id="passRoomNumber" style="font-size: 1.1rem;">Room 101</strong>
+        </div>
+
+        <div style="background: #F8FAFC; padding: 12px 16px; border-radius: 8px;">
+          <span style="color: var(--color-text-muted); font-size: 12px; display: block; font-weight: 700;">LEAVE TYPE</span>
+          <strong id="passLeaveType" style="font-size: 1.1rem;">Outing Pass</strong>
+        </div>
+
+        <div style="background: #F8FAFC; padding: 12px 16px; border-radius: 8px;">
+          <span style="color: var(--color-text-muted); font-size: 12px; display: block; font-weight: 700;">VALID PERMIT DATES</span>
+          <strong id="passValidDates" style="font-size: 0.95rem;">From - To</strong>
+        </div>
+
+        <div style="background: #F8FAFC; padding: 12px 16px; border-radius: 8px;">
+          <span style="color: var(--color-text-muted); font-size: 12px; display: block; font-weight: 700;">GATE LOCATION</span>
+          <strong id="passGateLocation" style="font-size: 1.1rem; color: #D97706;">MAIN HOSTEL GATE</strong>
+        </div>
+
+        <div style="background: #FEF3C7; padding: 12px 16px; border-radius: 8px; grid-column: 1 / -1;">
+          <span style="color: #92400E; font-size: 12px; display: block; font-weight: 700;">PERMITTED RETURN DEADLINE</span>
+          <strong id="passCurfewDeadline" style="font-size: 1.15rem; color: #B45309;">Return before 8:00 PM (20:00)</strong>
+        </div>
+      </div>
+
+      <!-- Warnings Container -->
+      <div id="securityWarningBox" class="alert alert-error hidden" style="margin-bottom: 20px; font-size: 1rem; font-weight: 700; text-align: center;"></div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+        <button id="markExitBtn" class="btn-action-lg" style="background: #D97706; color: white; border: none;">
+          🚪 MARK EXIT
+        </button>
+
+        <button id="markEntryBtn" class="btn-action-lg" style="background: #10B981; color: white; border: none;">
+          🏠 MARK ENTRY
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+  <script src="js/firebase-config.js?v=15.0"></script>
+  <script src="js/main.js?v=15.0"></script>
+  <script src="js/auth-service.js?v=15.0"></script>
+  <script src="js/firestore-service.js?v=15.0"></script>
+  <script src="js/notification-service.js?v=15.0"></script>
+  <script src="js/dashboard-security.js?v=15.0"></script>
+</body>
+</html>

@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="KLS VDIT Admin Dashboard — Manage college branding, website logo, hero image, and institution contact details.">
+  <title>Admin Dashboard — KLS VDIT Hostel Management System</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body class="dashboard-page">
+
+  <!-- Navigation Header -->
+  <header class="dashboard-header">
+    <div class="container">
+      <a href="index.html" class="dashboard-brand" style="gap: 10px;">
+        <img id="adminHeaderLogoImg" src="" alt="College Logo" style="height: 32px; width: auto; object-fit: contain; display: none;">
+        <svg id="adminHeaderDefaultLogo" width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect x="3" y="14" width="26" height="15" rx="2" fill="#7C3AED"/>
+          <path d="M16 3L3 14H29L16 3Z" fill="#1B2A4A"/>
+          <rect x="8" y="18" width="5" height="5" rx="1" fill="white" opacity="0.9"/>
+          <rect x="19" y="18" width="5" height="5" rx="1" fill="white" opacity="0.9"/>
+          <rect x="13" y="22" width="6" height="7" rx="1" fill="white" opacity="0.9"/>
+        </svg>
+        <span id="adminHeaderCollegeName">KLS VDIT Admin Portal</span>
+      </a>
+
+      <div class="dashboard-user-info">
+        <span class="user-badge" style="background: #F3E8FF; color: #7C3AED; border: 1px solid #DDD6FE;">System Administrator</span>
+        <button id="adminLogoutBtn" class="btn btn-secondary btn-sm">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="dashboard-main container">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner" style="background: linear-gradient(135deg, #1B2A4A 0%, #2563EB 50%, #7C3AED 100%);">
+      <div class="welcome-content">
+        <h1>Welcome, Administrator</h1>
+        <p style="margin-top: 4px; opacity: 0.9;">Manage official college branding, logo, main website photo, and institution contact details for KLS VDIT.</p>
+      </div>
+      <div class="welcome-meta" style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="index.html" target="_blank" class="btn btn-secondary btn-sm" style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3);">
+          👁️ Preview Live Home Page
+        </a>
+      </div>
+    </div>
+
+    <!-- Overview Stats Cards -->
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 24px;">
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #EFF6FF; color: #2563EB;">🎓</div>
+        <div class="stat-details">
+          <span class="stat-label">Total Students</span>
+          <span class="stat-value" id="adminTotalStudentsCount">0</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #E0F2FE; color: #0284C7;">👨</div>
+        <div class="stat-details">
+          <span class="stat-label">Boys Hostel</span>
+          <span class="stat-value" id="adminBoysCount">0</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #FCE7F3; color: #DB2777;">👩</div>
+        <div class="stat-details">
+          <span class="stat-label">Girls Hostel</span>
+          <span class="stat-value" id="adminGirlsCount">0</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #FEF3C7; color: #D97706;">📋</div>
+        <div class="stat-details">
+          <span class="stat-label">Pending Leaves</span>
+          <span class="stat-value" id="adminPendingLeavesCount">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Warden Management Section -->
+    <div class="table-card" id="wardenManagementSection" style="margin-bottom: 32px; border-top: 4px solid #7C3AED; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); background: #ffffff; overflow: hidden;">
+      <div class="table-card-header" style="background: #F8FAFC; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 18px 24px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="background: #7C3AED; color: #FFFFFF; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 0.5px;">SECTION 1</span>
+            <h3 style="font-size: 1.2rem; font-weight: 700; color: #0F172A; margin: 0;">👨‍🏫 Warden Management</h3>
+          </div>
+          <p class="text-muted text-small" style="margin-top: 4px;">Configure and manage assigned wardens for Boys Hostel and Girls Hostel</p>
+        </div>
+        <button type="button" id="openAddWardenModalBtn" class="btn btn-primary btn-sm" style="background: #7C3AED; border-color: #7C3AED; font-weight: 700;">
+          + Add Warden
+        </button>
+      </div>
+
+      <div style="padding: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+        <!-- Boys Hostel Warden Card -->
+        <div id="boysWardenCard" style="background: var(--color-bg); padding: 20px; border-radius: var(--radius-lg); border: 2px solid #DBEAFE;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="font-size: 1.1rem; font-weight: 700; color: #1E40AF; display: flex; align-items: center; gap: 8px;">
+              <span>👨 Boys Hostel Warden</span>
+            </h4>
+            <span id="boysWardenStatusBadge" class="status-badge approved">Active</span>
+          </div>
+
+          <div style="font-size: 14px; color: var(--color-text); margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px;">
+            <div><strong>Name:</strong> <span id="boysWardenNameText">Not Assigned</span></div>
+            <div><strong>Email:</strong> <span id="boysWardenEmailText">--</span></div>
+            <div><strong>Phone:</strong> <span id="boysWardenPhoneText">--</span></div>
+            <div><strong>Assigned Hostel:</strong> <span style="font-weight: 600; color: #2563EB;">Boys Hostel</span></div>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button type="button" id="editBoysWardenBtn" class="btn btn-secondary btn-sm" style="flex: 1;">✏️ Edit</button>
+            <button type="button" id="toggleBoysWardenStatusBtn" class="btn btn-secondary btn-sm" style="flex: 1;">Deactivate</button>
+          </div>
+        </div>
+
+        <!-- Girls Hostel Warden Card -->
+        <div id="girlsWardenCard" style="background: var(--color-bg); padding: 20px; border-radius: var(--radius-lg); border: 2px solid #FCE7F3;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <h4 style="font-size: 1.1rem; font-weight: 700; color: #BE185D; display: flex; align-items: center; gap: 8px;">
+              <span>👩 Girls Hostel Warden</span>
+            </h4>
+            <span id="girlsWardenStatusBadge" class="status-badge approved">Active</span>
+          </div>
+
+          <div style="font-size: 14px; color: var(--color-text); margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px;">
+            <div><strong>Name:</strong> <span id="girlsWardenNameText">Not Assigned</span></div>
+            <div><strong>Email:</strong> <span id="girlsWardenEmailText">--</span></div>
+            <div><strong>Phone:</strong> <span id="girlsWardenPhoneText">--</span></div>
+            <div><strong>Assigned Hostel:</strong> <span style="font-weight: 600; color: #DB2777;">Girls Hostel</span></div>
+          </div>
+
+          <div style="display: flex; gap: 10px;">
+            <button type="button" id="editGirlsWardenBtn" class="btn btn-secondary btn-sm" style="flex: 1;">✏️ Edit</button>
+            <button type="button" id="toggleGirlsWardenStatusBtn" class="btn btn-secondary btn-sm" style="flex: 1;">Deactivate</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- College Settings Section (Card Layout) -->
+    <div class="table-card" style="margin-bottom: 32px; border-top: 4px solid #0284C7; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); background: #ffffff; overflow: hidden;">
+      <div class="table-card-header" style="background: #F8FAFC; border-bottom: 1px solid var(--color-border); padding: 18px 24px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="background: #0284C7; color: #FFFFFF; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 0.5px;">SECTION 2</span>
+          <h3 style="font-size: 1.2rem; font-weight: 700; color: #0F172A; margin: 0;">⚙️ College Settings &amp; Website Branding</h3>
+        </div>
+      </div>
+
+      <form id="adminSettingsForm" style="padding: 24px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+          
+          <!-- Column 1: Logo & Photo Uploads -->
+          <div style="background: var(--color-bg); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--color-border-light);">
+            
+            <!-- 1. College Logo Upload -->
+            <div class="form-group" style="margin-bottom: 20px;">
+              <label class="form-label" style="font-weight: 700;">College Logo</label>
+              <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 6px;">
+                <div id="adminLogoPreviewBox" style="width: 110px; height: 110px; border-radius: 12px; border: 2px dashed var(--color-border); display: flex; align-items: center; justify-content: center; background: #FFFFFF; overflow: hidden; margin: 0 auto; box-shadow: var(--shadow-sm);">
+                  <span class="text-muted text-small" id="adminLogoPlaceholderText">No Logo</span>
+                  <img id="adminLogoImg" src="" alt="College Logo" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <label class="btn btn-secondary btn-sm" style="cursor: pointer; text-align: center; width: 100%;">
+                    📷 Upload College Logo
+                    <input type="file" id="adminLogoFileInput" accept="image/*" style="display: none;">
+                  </label>
+                  <input type="url" id="adminLogoUrlInput" class="form-input" placeholder="Or paste Logo Image URL..." style="font-size: 12px;">
+                </div>
+              </div>
+            </div>
+
+            <hr style="border: 0; border-top: 1px dashed var(--color-border); margin: 20px 0;">
+
+            <!-- 2. Main Website Photo Upload -->
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" style="font-weight: 700;">Main Website Photo (Home Hero Image)</label>
+              <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 6px;">
+                <div id="adminHeroPreviewBox" style="width: 100%; height: 160px; border-radius: 12px; border: 2px dashed var(--color-border); display: flex; align-items: center; justify-content: center; background: #FFFFFF; overflow: hidden; box-shadow: var(--shadow-sm);">
+                  <span class="text-muted text-small" id="adminHeroPlaceholderText">No Photo Uploaded</span>
+                  <img id="adminHeroImg" src="" alt="Main Website Hero Photo" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                  <label class="btn btn-secondary btn-sm" style="cursor: pointer; text-align: center; width: 100%;">
+                    📷 Upload Main Photo
+                    <input type="file" id="adminHeroFileInput" accept="image/*" style="display: none;">
+                  </label>
+                  <input type="url" id="adminHeroUrlInput" class="form-input" placeholder="Or paste Hero Photo URL..." style="font-size: 12px;">
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Column 2: College Information Inputs -->
+          <div style="background: var(--color-bg); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--color-border-light); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label for="adminCollegeName" class="form-label" style="font-weight: 700;">College Name</label>
+                <input
+                  type="text"
+                  id="adminCollegeName"
+                  class="form-input"
+                  placeholder="e.g. KLS Vishwanathrao Deshpande Institute of Technology (KLS VDIT), Haliyal"
+                  required
+                >
+              </div>
+
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label for="adminCollegeAddress" class="form-label" style="font-weight: 700;">College Address / Location</label>
+                <input
+                  type="text"
+                  id="adminCollegeAddress"
+                  class="form-input"
+                  placeholder="e.g. Udyog Vidya Nagar, Haliyal, Uttara Kannada, Karnataka - 581329"
+                  required
+                >
+              </div>
+
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label for="adminCollegePhone" class="form-label" style="font-weight: 700;">Phone Number</label>
+                <input
+                  type="text"
+                  id="adminCollegePhone"
+                  class="form-input"
+                  placeholder="e.g. +91 8284 220261"
+                  required
+                >
+              </div>
+
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label for="adminCollegeEmail" class="form-label" style="font-weight: 700;">Email Address</label>
+                <input
+                  type="email"
+                  id="adminCollegeEmail"
+                  class="form-input"
+                  placeholder="e.g. principal@klsvdit.ac.in"
+                  required
+                >
+              </div>
+
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label for="adminCollegeWebsite" class="form-label" style="font-weight: 700;">Website URL</label>
+                <input
+                  type="text"
+                  id="adminCollegeWebsite"
+                  class="form-input"
+                  placeholder="e.g. www.klsvdit.ac.in"
+                  required
+                >
+              </div>
+
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label for="adminCollegeDescription" class="form-label" style="font-weight: 700;">College / Hostel Description</label>
+                <textarea
+                  id="adminCollegeDescription"
+                  class="form-input"
+                  rows="3"
+                  placeholder="e.g. Official Hostel Management System of KLS VDIT Haliyal — providing modern digital rooms, leave tracking, mess updates and student services."
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- Action Buttons Footer -->
+            <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+              <a href="index.html" target="_blank" class="btn btn-secondary" style="flex: 1; min-width: 140px; text-align: center;">
+                👁️ Preview Website
+              </a>
+              <button type="submit" id="saveAdminSettingsBtn" class="btn btn-primary" style="flex: 2; min-width: 180px; background: #7C3AED; border-color: #7C3AED;">
+                💾 Save Changes
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+      </form>
+
+    </div>
+
+  </main>
+
+  <!-- Add / Edit Warden Modal -->
+  <div class="modal" id="addWardenModal" role="dialog" aria-hidden="true">
+    <div class="modal-content" style="max-width: 520px;">
+      <div class="modal-header" style="background: #F8FAFC; border-bottom: 1px solid var(--color-border);">
+        <h3 id="wardenModalTitle">➕ Add New Warden</h3>
+        <button class="modal-close" id="closeWardenModalBtn" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="wardenAccountForm">
+        <div class="modal-body" style="padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+          <input type="hidden" id="wardenDocId" value="">
+
+          <div class="form-group">
+            <label for="wardenInputName" class="form-label" style="font-weight: 700;">Warden Name</label>
+            <input type="text" id="wardenInputName" class="form-input" placeholder="e.g. Ramesh Kumar" required>
+          </div>
+
+          <div class="form-group">
+            <label for="wardenInputEmail" class="form-label" style="font-weight: 700;">Email Address</label>
+            <input type="email" id="wardenInputEmail" class="form-input" placeholder="e.g. boyswarden@klsvdit.ac.in" required>
+          </div>
+
+          <div class="form-group">
+            <label for="wardenInputPhone" class="form-label" style="font-weight: 700;">Phone Number</label>
+            <input type="tel" id="wardenInputPhone" class="form-input" placeholder="e.g. 9876543210" required>
+          </div>
+
+          <div class="form-group">
+            <label for="wardenInputHostelType" class="form-label" style="font-weight: 700;">Assigned Hostel Category</label>
+            <select id="wardenInputHostelType" class="form-input" required>
+              <option value="boys">Boys Hostel</option>
+              <option value="girls">Girls Hostel</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="wardenPasswordGroup">
+            <label for="wardenInputPassword" class="form-label" style="font-weight: 700;">Account Password</label>
+            <input type="password" id="wardenInputPassword" class="form-input" placeholder="Enter password for warden login">
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding: 16px 20px; background: #F8FAFC; border-top: 1px solid var(--color-border); display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-secondary" id="cancelWardenModalBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveWardenModalSubmitBtn" style="background: #7C3AED; border-color: #7C3AED;">
+            💾 Save Warden Account
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth-service.js"></script>
+  <script src="js/firestore-service.js"></script>
+  <script src="js/dashboard-admin.js"></script>
+
+</body>
+</html>

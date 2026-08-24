@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="KLS VDIT Hostel Management System Admin Login — Manage college branding, website logo, and institution details.">
+  <title>Admin Login — KLS VDIT Hostel Management System</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+
+  <div class="login-page">
+    <div class="login-container">
+
+      <!-- College Branding Header -->
+      <div class="login-branding">
+        <div id="loginCollegeLogoWrapper" class="login-branding-logo" aria-label="College logo placeholder" style="overflow: hidden; display: flex; align-items: center; justify-content: center;">
+          <span id="loginLogoPlaceholderText">KLS<br>VDIT</span>
+          <img id="loginCollegeLogoImg" src="" alt="College Logo" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+        </div>
+        <h3 id="loginCollegeName">KLS Vishwanathrao Deshpande Institute of Technology (KLS VDIT), Haliyal</h3>
+      </div>
+
+      <!-- Login Card -->
+      <div class="login-card">
+        <div class="login-header">
+          <div class="login-header-icon admin" aria-hidden="true" style="background: #F3E8FF;">
+            <!-- Admin Gear / Shield icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+          <h1>Administrator Login</h1>
+          <p>Manage college branding &amp; portal settings</p>
+        </div>
+
+        <!-- Alert Error Message Container -->
+        <div id="loginAlert" class="login-alert hidden" role="alert"></div>
+
+        <form class="login-form" id="adminLoginForm" onsubmit="return false;" novalidate>
+          <!-- Email -->
+          <div class="form-group">
+            <label for="admin-email" class="form-label">Admin Email Address</label>
+            <input
+              type="email"
+              id="admin-email"
+              class="form-input"
+              value="admin@klsvdit.ac.in"
+              placeholder="admin@klsvdit.ac.in"
+              autocomplete="email"
+              required
+            >
+          </div>
+
+          <!-- Password -->
+          <div class="form-group">
+            <label for="admin-password" class="form-label">Password</label>
+            <div class="form-password-wrapper">
+              <input
+                type="password"
+                id="admin-password"
+                class="form-input"
+                value="admin123"
+                placeholder="Enter admin password"
+                autocomplete="current-password"
+                required
+              >
+              <button
+                type="button"
+                class="password-toggle"
+                aria-label="Show password"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="adminLoginBtn" style="background: #7C3AED; border-color: #7C3AED;">
+            Login as Administrator
+          </button>
+
+          <button type="button" id="adminQuickLoginBtn" class="btn btn-secondary btn-block" style="margin-top: 10px; border-color: #7C3AED; color: #7C3AED; font-weight: 600;">
+            ⚡ Instant Admin Access (One-Click)
+          </button>
+
+          <div style="text-align: center; margin-top: 12px;">
+            <a href="#" id="adminForgotPassBtn" class="form-link" style="color: #7C3AED; font-weight: 500;">🔑 Forgot Password / Reset Account</a>
+          </div>
+        </form>
+
+        <!-- Switch user links -->
+        <div class="login-footer" style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px;">
+          <a href="student-login.html" class="form-link">Student Login</a>
+          <a href="warden-login.html" class="form-link">Warden Login</a>
+        </div>
+      </div>
+
+      <!-- Back to home -->
+      <a href="index.html" class="login-back">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Back to Home Page
+      </a>
+
+    </div>
+  </div>
+
+  <!-- Firebase SDK (Compat Version for local file:// support) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth-service.js"></script>
+  <script src="js/firestore-service.js"></script>
+  <script src="js/login-admin.js"></script>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

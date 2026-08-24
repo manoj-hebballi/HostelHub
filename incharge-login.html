@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hostel Incharge Login — KLS VDIT Hostel Management System</title>
+  <meta name="description" content="Incharge portal authentication for KLS VDIT Hostel Management System.">
+
+  <!-- Favicon & Styles -->
+  <link rel="icon" type="image/png" href="assets/hero-illustration.jpg">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+
+  <div class="login-page">
+    <div class="login-container">
+
+      <!-- College Branding Header -->
+      <div class="login-branding">
+        <div id="loginCollegeLogoWrapper" class="login-branding-logo" aria-label="College logo placeholder" style="overflow: hidden; display: flex; align-items: center; justify-content: center;">
+          <span id="loginLogoPlaceholderText">KLS<br>VDIT</span>
+          <img id="loginCollegeLogoImg" src="" alt="College Logo" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+        </div>
+        <h3 id="loginCollegeName">KLS Vishwanathrao Deshpande Institute of Technology (KLS VDIT), Haliyal</h3>
+      </div>
+
+      <!-- Login Card -->
+      <div class="login-card">
+        <div class="login-header">
+          <div class="login-header-icon incharge" aria-hidden="true" style="background: #E0F2FE;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0284C7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <h2>Hostel Incharge Login</h2>
+          <p class="login-subtitle">Manage unit wardens, students, leaves &amp; hostel settings</p>
+        </div>
+
+        <!-- Alert Container -->
+        <div id="loginAlert" class="alert alert-error hidden" role="alert"></div>
+
+        <form id="inchargeLoginForm" onsubmit="return false;" novalidate>
+          <!-- Email -->
+          <div class="form-group">
+            <label for="incharge-email" class="form-label">Incharge Email Address</label>
+            <input
+              type="email"
+              id="incharge-email"
+              class="form-input"
+              value=""
+              placeholder="e.g. boys.incharge@college.edu"
+              autocomplete="email"
+              required
+            >
+          </div>
+
+          <!-- Password -->
+          <div class="form-group">
+            <label for="incharge-password" class="form-label">Password</label>
+            <div class="form-password-wrapper">
+              <input
+                type="password"
+                id="incharge-password"
+                class="form-input"
+                value=""
+                placeholder="Enter incharge password"
+                autocomplete="current-password"
+                required
+              >
+              <button
+                type="button"
+                class="password-toggle"
+                aria-label="Show password"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="inchargeLoginBtn" style="background: #0284C7; border-color: #0284C7;">
+            Login as Hostel Incharge
+          </button>
+
+          <div style="margin-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+            <button type="button" class="btn btn-secondary btn-sm incharge-email-fill" data-email="incharge.boys@klsvdit.ac.in" style="border-color: #0284C7; color: #0284C7; font-weight: 600; font-size: 11px;">
+              Boys
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm incharge-email-fill" data-email="incharge.girls1@klsvdit.ac.in" style="border-color: #0284C7; color: #0284C7; font-weight: 600; font-size: 11px;">
+              Girls 1
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm incharge-email-fill" data-email="incharge.girls2@klsvdit.ac.in" style="border-color: #0284C7; color: #0284C7; font-weight: 600; font-size: 11px;">
+              Girls 2
+            </button>
+          </div>
+
+        </form>
+
+        <!-- Switch user links -->
+        <div class="login-footer" style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin-top: 16px;">
+          <a href="warden-login.html" class="form-link">Warden Login</a>
+          <a href="student-login.html" class="form-link">Student Login</a>
+          <a href="security-login.html" class="form-link">Gate Security</a>
+        </div>
+      </div>
+
+      <!-- Back to home -->
+      <a href="index.html" class="login-back">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Back to Home Page
+      </a>
+
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth-service.js"></script>
+  <script src="js/firestore-service.js"></script>
+  <script src="js/login-incharge.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

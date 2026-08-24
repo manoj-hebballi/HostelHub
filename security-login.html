@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gate Security Login — KLS VDIT Hostel Management System</title>
+  <meta name="description" content="Gate Security portal authentication for KLS VDIT Hostel Management System.">
+
+  <!-- Favicon & Styles -->
+  <link rel="icon" type="image/png" href="assets/hero-illustration.jpg">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+
+  <div class="login-page">
+    <div class="login-container">
+
+      <!-- College Branding Header -->
+      <div class="login-branding">
+        <div id="loginCollegeLogoWrapper" class="login-branding-logo" aria-label="College logo placeholder" style="overflow: hidden; display: flex; align-items: center; justify-content: center;">
+          <span id="loginLogoPlaceholderText">KLS<br>VDIT</span>
+          <img id="loginCollegeLogoImg" src="" alt="College Logo" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+        </div>
+        <h3 id="loginCollegeName">KLS Vishwanathrao Deshpande Institute of Technology (KLS VDIT), Haliyal</h3>
+      </div>
+
+      <!-- Login Card -->
+      <div class="login-card">
+        <div class="login-header">
+          <div class="login-header-icon security" aria-hidden="true" style="background: #FEF3C7;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="M12 8v4"/>
+              <path d="M12 16h.01"/>
+            </svg>
+          </div>
+          <h2>Gate Security Portal</h2>
+          <p class="login-subtitle">Scan student QR gate passes &amp; log Entry / Exit records</p>
+        </div>
+
+        <!-- Alert Container -->
+        <div id="loginAlert" class="alert alert-error hidden" role="alert"></div>
+
+        <form id="securityLoginForm" onsubmit="return false;" novalidate>
+          <!-- Email -->
+          <div class="form-group">
+            <label for="security-email" class="form-label">Gate Officer Email</label>
+            <input
+              type="email"
+              id="security-email"
+              class="form-input"
+              value=""
+              placeholder="e.g. security@college.edu"
+              autocomplete="email"
+              required
+            >
+          </div>
+
+          <!-- Password -->
+          <div class="form-group">
+            <label for="security-password" class="form-label">Password</label>
+            <div class="form-password-wrapper">
+              <input
+                type="password"
+                id="security-password"
+                class="form-input"
+                value=""
+                placeholder="Enter security password"
+                autocomplete="current-password"
+                required
+              >
+              <button
+                type="button"
+                class="password-toggle"
+                aria-label="Show password"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" class="btn btn-primary btn-block btn-lg" id="securityLoginBtn" style="background: #D97706; border-color: #D97706;">
+            Login to Gate Security Scanner
+          </button>
+
+        </form>
+
+        <!-- Switch user links -->
+        <div class="login-footer" style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin-top: 16px;">
+          <a href="warden-login.html" class="form-link">Warden Login</a>
+          <a href="incharge-login.html" class="form-link">Incharge Login</a>
+          <a href="student-login.html" class="form-link">Student Login</a>
+        </div>
+      </div>
+
+      <!-- Back to home -->
+      <a href="index.html" class="login-back">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"/>
+          <polyline points="12 19 5 12 12 5"/>
+        </svg>
+        Back to Home Page
+      </a>
+
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/auth-service.js"></script>
+  <script src="js/firestore-service.js"></script>
+  <script src="js/login-security.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

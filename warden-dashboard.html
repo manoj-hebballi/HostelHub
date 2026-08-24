@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="KLS VDIT Warden Dashboard — Manage hostel residents, room allocations, leave approvals, complaints, and mess menu.">
+  <title>Warden Dashboard — KLS VDIT Hostel Management System</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/design-system.css?v=17.0">
+  <link rel="stylesheet" href="css/dashboard.css?v=17.0">
+</head>
+<body class="dashboard-page">
+
+  <!-- Navigation Header -->
+  <header class="dashboard-header">
+    <div class="container">
+      <a href="index.html" class="dashboard-brand">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect x="3" y="14" width="26" height="15" rx="2" fill="#2563EB"/>
+          <path d="M16 3L3 14H29L16 3Z" fill="#1B2A4A"/>
+          <rect x="8" y="18" width="5" height="5" rx="1" fill="white" opacity="0.9"/>
+          <rect x="19" y="18" width="5" height="5" rx="1" fill="white" opacity="0.9"/>
+          <rect x="13" y="22" width="6" height="7" rx="1" fill="white" opacity="0.9"/>
+        </svg>
+        <span id="wardenCollegeNameHeader">KLS VDIT Warden Portal</span>
+      </a>
+
+      <div class="dashboard-user-info" style="display: flex; gap: 8px; align-items: center;">
+        <button type="button" class="btn btn-secondary btn-sm theme-toggle-btn" onclick="toggleTheme()" style="font-weight: 700;">🌙 Dark</button>
+        <span id="wardenHostelBadge" class="user-badge boys">Boys Hostel Warden</span>
+        <button id="wardenLogoutBtn" class="btn btn-secondary btn-sm">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="dashboard-main container">
+    <div class="dashboard-welcome" style="align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <span id="wardenHostelBadge" class="status-badge approved" style="font-size: 12px; font-weight: 700; margin-bottom: 6px; display: inline-block;">Boys Hostel Warden</span>
+        <h1 id="wardenWelcomeHeading" style="font-size: 1.6rem; font-weight: 800; margin: 0;">Good Day, Warden</h1>
+        <p id="wardenSubtitle" class="text-muted text-small" style="margin-top: 2px;">KLS VDIT Warden Analytics &amp; Management Portal</p>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button id="openAddStudentModalBtn" class="btn btn-primary btn-sm">
+          + Register Student
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="openAddRoomModalDirect()">
+          + Add Room
+        </button>
+      </div>
+    </div>
+
+    <!-- Warden Profile Details Card -->
+    <div class="table-card" style="margin-bottom: var(--space-xl); padding: 16px 20px; background: #F8FAFC;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="width: 44px; height: 44px; border-radius: 50%; background: var(--color-primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.2rem;" id="wardenAvatarBox">
+            👤
+          </div>
+          <div>
+            <div style="font-weight: 700; color: var(--color-primary); font-size: 1rem;" id="profileWardenName">Warden Profile</div>
+            <div style="font-size: 12px; color: var(--color-text-muted);" id="profileWardenEmailPhone">Email: -- | Phone: --</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 12px; font-weight: 600; color: var(--color-text-muted);">Assigned Hostel:</span>
+          <span id="profileAssignedHostelBadge" class="status-badge approved" style="font-size: 13px; font-weight: 700;">Boys Hostel (Read-Only)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Warden Summary Analytics Cards -->
+    <div class="summary-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom: var(--space-xl);">
+      <div class="summary-card">
+        <div class="summary-icon">👥</div>
+        <div class="summary-info">
+          <span class="summary-value" id="wardenTotalStudents">0</span>
+          <span class="summary-label">Total Students</span>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-icon">🚪</div>
+        <div class="summary-info">
+          <span class="summary-value" id="statTotalRooms">0</span>
+          <span class="summary-label">Total Rooms</span>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-icon">🟢</div>
+        <div class="summary-info">
+          <span class="summary-value" id="statAvailableRooms">0</span>
+          <span class="summary-label">Available Rooms</span>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-icon">⏳</div>
+        <div class="summary-info">
+          <span class="summary-value" id="wardenPendingLeaves">0</span>
+          <span class="summary-label">Pending Leaves</span>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-icon">🛠️</div>
+        <div class="summary-info">
+          <span class="summary-value" id="wardenActiveComplaints">0</span>
+          <span class="summary-label">Active Complaints</span>
+        </div>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-icon">📢</div>
+        <div class="summary-info">
+          <span class="summary-value" id="wardenActiveNotices">0</span>
+          <span class="summary-label">Active Notices</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics & Overview Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: var(--space-lg); margin-bottom: var(--space-xl);">
+      <!-- Room Occupancy Card -->
+      <div class="profile-card" style="margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="font-size: 1rem; font-weight: 700; color: var(--color-primary); margin: 0;">🚪 Room Occupancy Rate</h3>
+          <span id="roomOccupancyPct" style="font-size: 14px; font-weight: 800; color: var(--color-primary);">0%</span>
+        </div>
+        
+        <!-- Progress Bar -->
+        <div style="width: 100%; height: 12px; background: #E2E8F0; border-radius: 6px; overflow: hidden; margin-bottom: 14px;">
+          <div id="roomOccupancyBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #2563EB, #1D4ED8); border-radius: 6px; transition: width 0.4s ease;"></div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 12px;" class="text-muted">
+          <span>Total: <strong id="ocTotal">0</strong></span>
+          <span>Occupied: <strong id="ocOccupied">0</strong></span>
+          <span>Available: <strong id="ocAvailable">0</strong></span>
+          <span>Full: <strong id="ocFull">0</strong></span>
+        </div>
+      </div>
+
+      <!-- Leave Overview Card -->
+      <div class="profile-card" style="margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="font-size: 1rem; font-weight: 700; color: var(--color-primary); margin: 0;">📄 Leave Applications</h3>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="scrollToSection('wardenLeaveSection')" style="font-size: 11px; padding: 2px 8px;">[ View Requests ]</button>
+        </div>
+
+        <div style="display: flex; gap: 8px; font-size: 12.5px; margin-top: 8px;">
+          <div style="flex: 1; background: #FEF3C7; color: #92400E; padding: 10px; border-radius: 8px; text-align: center;">
+            <span style="display: block; font-size: 1.1rem; font-weight: 800;" id="anPendingLeaves">0</span>
+            <span style="font-size: 11px; font-weight: 600;">Pending 🟡</span>
+          </div>
+          <div style="flex: 1; background: #DCFCE7; color: #166534; padding: 10px; border-radius: 8px; text-align: center;">
+            <span style="display: block; font-size: 1.1rem; font-weight: 800;" id="anApprovedLeaves">0</span>
+            <span style="font-size: 11px; font-weight: 600;">Approved 🟢</span>
+          </div>
+          <div style="flex: 1; background: #FEE2E2; color: #991B1B; padding: 10px; border-radius: 8px; text-align: center;">
+            <span style="display: block; font-size: 1.1rem; font-weight: 800;" id="anRejectedLeaves">0</span>
+            <span style="font-size: 11px; font-weight: 600;">Rejected 🔴</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Complaint Overview Card -->
+      <div class="profile-card" style="margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 style="font-size: 1rem; font-weight: 700; color: var(--color-primary); margin: 0;">🛠️ Complaints Tracker</h3>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="scrollToSection('wardenComplaintSection')" style="font-size: 11px; padding: 2px 8px;">[ View Complaints ]</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12.5px;">
+          <div style="background: #FEF3C7; color: #92400E; padding: 8px; border-radius: 6px; text-align: center;">
+            <span style="font-weight: 800;" id="anCompSubmitted">0</span> <span style="font-size: 11px;">Submitted 🟡</span>
+          </div>
+          <div style="background: #E0F2FE; color: #075985; padding: 8px; border-radius: 6px; text-align: center;">
+            <span style="font-weight: 800;" id="anCompViewed">0</span> <span style="font-size: 11px;">Viewed 🔵</span>
+          </div>
+          <div style="background: #FFEDD5; color: #C2410C; padding: 8px; border-radius: 6px; text-align: center;">
+            <span style="font-weight: 800;" id="anCompInProgress">0</span> <span style="font-size: 11px;">In Progress 🟠</span>
+          </div>
+          <div style="background: #DCFCE7; color: #166534; padding: 8px; border-radius: 6px; text-align: center;">
+            <span style="font-weight: 800;" id="anCompResolved">0</span> <span style="font-size: 11px;">Resolved 🟢</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Warden Quick Actions Section -->
+    <div class="profile-card" style="margin-bottom: var(--space-xl); background: #F8FAFC; border: 1px solid #E2E8F0;">
+      <h3 style="font-size: 1rem; font-weight: 700; color: var(--color-primary); margin-bottom: 12px;">⚡ Warden Quick Actions</h3>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;">
+        <button type="button" class="btn btn-primary btn-sm" onclick="openAddStudentModalDirect()">+ Add Student</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="openAddRoomModalDirect()">+ Add Room</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="scrollToSection('wardenLeaveSection')">Review Leaves</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="scrollToSection('wardenComplaintSection')">View Complaints</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="openCreateNoticeModalDirect()">+ Create Notice</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="openEditMessMenuModalDirect()">✏️ Manage Mess</button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="scrollToSection('wardenSettingsSection')">⚙️ Settings</button>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- Warden Profile Card -->
+      <div class="profile-card">
+        <div class="profile-card-header">
+          <div class="avatar-circle" id="wardenAvatar">W</div>
+          <div>
+            <h2 id="wardenNameDisplay">Loading Warden Profile...</h2>
+            <p id="wardenEmailDisplay" class="text-muted">Email: --</p>
+          </div>
+        </div>
+
+        <div class="profile-details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Warden Name</span>
+            <span class="detail-value" id="detailWardenName">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Official Email</span>
+            <span class="detail-value" id="detailWardenEmail">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Assigned Hostel</span>
+            <span class="detail-value" id="detailWardenHostel">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Access Level</span>
+            <span class="detail-value" style="color: var(--color-success);">Strict Authorized Warden</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hostel Leave Requests Management Section -->
+      <div class="table-card" id="wardenLeaveSection" style="grid-column: 1 / -1; margin-bottom: 36px; border-top: 4px solid #0284C7; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); background: #ffffff; overflow: hidden;">
+        <div class="table-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 18px 24px; background: #F8FAFC; border-bottom: 1px solid var(--color-border);">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="background: #0284C7; color: #FFFFFF; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 0.5px;">SECTION 1</span>
+              <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #0F172A;">📋 Hostel Leave Requests Management</h3>
+              <span style="font-size: 13px; font-weight: 700; background: #DCFCE7; color: #166534; padding: 4px 10px; border-radius: 20px; border: 1px solid #86EFAC;">
+                Students Currently on Leave: <strong id="wardenCurrentlyOnLeaveCount">0</strong>
+              </span>
+            </div>
+            <p class="text-muted text-small" style="margin-top: 4px;">Review student leave applications &amp; view active leave residents</p>
+          </div>
+          <div class="filter-pills-container">
+            <button type="button" class="filter-pill active" id="filter-leave-all" onclick="setLeaveFilter('all')">All</button>
+            <button type="button" class="filter-pill" id="filter-leave-active" onclick="setLeaveFilter('active')">Currently on Leave 🟢</button>
+            <button type="button" class="filter-pill" id="filter-leave-pending" onclick="setLeaveFilter('pending')">Pending 🟡</button>
+            <button type="button" class="filter-pill" id="filter-leave-approved" onclick="setLeaveFilter('approved')">Approved 🟢</button>
+            <button type="button" class="filter-pill" id="filter-leave-rejected" onclick="setLeaveFilter('rejected')">Rejected 🔴</button>
+          </div>
+        </div>
+
+        <!-- Toolbar Search Bar & Download Button -->
+        <div class="toolbar-container" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div class="search-wrapper" style="flex: 1; min-width: 240px;">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="wardenLeaveSearchInput" class="search-input" placeholder="Search requests by Student Name or USN...">
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" id="downloadLeavePdfBtn" class="btn btn-primary btn-sm" onclick="downloadFilteredLeavesPDF()" style="background: #0284C7; border-color: #0284C7; font-weight: 700;">
+              📥 Download Leave Student List (PDF)
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="clearWardenCompletedLeaves()" style="color: #DC2626; border-color: #FECACA; background: #FEF2F2; font-weight: 700;">
+              🗑️ Clear Completed Leaves
+            </button>
+            <button id="refreshWardenLeavesBtn" class="btn btn-secondary btn-sm">Refresh Requests</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Room &amp; Course</th>
+                <th>Leave Type</th>
+                <th>Dates</th>
+                <th>Duration</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="wardenLeaveTableBody">
+              <tr>
+                <td colspan="7" class="empty-state">Loading hostel leave requests...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Gate Pass Activity & Entry/Exit Monitoring Section -->
+      <div class="table-card" id="wardenGatePassSection" style="grid-column: 1 / -1; margin-bottom: 36px; border-top: 4px solid #0D9488; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); background: #ffffff; overflow: hidden;">
+        <div class="table-card-header" style="background: #F8FAFC; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding: 18px 24px;">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="background: #0D9488; color: #FFFFFF; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 0.5px;">SECTION 2</span>
+              <h3 style="font-size: 1.15rem; font-weight: 700; color: #0F172A; margin: 0;">🚪 Gate Pass Activity &amp; Live Scanner History</h3>
+            </div>
+            <p class="text-muted text-small" style="margin-top: 4px;">Track student exit/entry scans, curfew deadlines &amp; late returns in real-time</p>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" id="downloadGatePdfBtn" class="btn btn-primary btn-sm" onclick="downloadGateActivityPDF()" style="background: #0D9488; border-color: #0D9488; font-weight: 700;">
+              📥 Download Gate Activity (PDF)
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="clearWardenGateActivity()" style="color: #DC2626; border-color: #FECACA; background: #FEF2F2; font-weight: 700;">
+              🗑️ Clear Activity History
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="refreshWardenGatePasses()">🔄 Refresh Passes</button>
+          </div>
+        </div>
+
+        <div style="padding: 20px;">
+          <div class="table-container" style="overflow-x: auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Pass Token</th>
+                  <th>Student Name</th>
+                  <th>USN</th>
+                  <th>Room</th>
+                  <th>Leave Type</th>
+                  <th>Exit Time</th>
+                  <th>Entry Time</th>
+                  <th>Curfew Status</th>
+                </tr>
+              </thead>
+              <tbody id="wardenGatePassTableBody">
+                <tr>
+                  <td colspan="8" class="empty-state">Loading gate pass activity...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Student Resident Directory (Isolated by Hostel Type) -->
+      <div class="table-card" id="wardenResidentDirectorySection" style="grid-column: 1 / -1; margin-bottom: 36px; border-top: 4px solid #4F46E5; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); background: #ffffff; overflow: hidden;">
+        <div class="table-card-header" style="padding: 18px 24px; background: #F8FAFC; border-bottom: 1px solid var(--color-border);">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="background: #4F46E5; color: #FFFFFF; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 0.5px;">SECTION 3</span>
+              <h3 id="directoryTitle" style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #0F172A;">👥 Resident Directory</h3>
+            </div>
+            <p id="directorySubtitle" class="text-muted text-small" style="margin-top: 4px;">Showing students for your assigned hostel category only</p>
+          </div>
+          <span id="studentCountBadge" class="user-badge boys">0 Students</span>
+        </div>
+
+        <!-- Search Bar Toolbar -->
+        <div class="toolbar-container">
+          <div class="search-wrapper">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="studentSearchInput" class="search-input" placeholder="Search residents by Name or USN...">
+          </div>
+          <span class="text-muted text-small" id="searchCountFeedback">Searching all registered residents</span>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Student Name</th>
+                <th>USN</th>
+                <th>Course</th>
+                <th>Semester</th>
+                <th>Room No.</th>
+                <th>Status</th>
+                <th>Student Phone</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="studentTableBody">
+              <tr>
+                <td colspan="8" class="empty-state">Loading resident directory...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Hostel Complaints & Maintenance Section -->
+      <div class="table-card" id="wardenComplaintSection" style="grid-column: 1 / -1; margin-bottom: 36px; border-top: 4px solid #D97706; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); background: #ffffff; overflow: hidden;">
+        <div class="table-card-header" style="padding: 18px 24px; background: #F8FAFC; border-bottom: 1px solid var(--color-border);">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="background: #D97706; color: #FFFFFF; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 0.5px;">SECTION 4</span>
+              <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #0F172A;">🛠️ Hostel Complaints &amp; Maintenance System</h3>
+            </div>
+            <p class="text-muted text-small" style="margin-top: 4px;">Review, update status, and resolve maintenance issues reported by students for your assigned hostel</p>
+          </div>
+          <div class="filter-pills-container">
+            <button type="button" class="filter-pill active" id="filter-complaint-all" onclick="setComplaintFilter('all')">All</button>
+            <button type="button" class="filter-pill" id="filter-complaint-submitted" onclick="setComplaintFilter('submitted')">New / Submitted 🟡</button>
+            <button type="button" class="filter-pill" id="filter-complaint-viewed" onclick="setComplaintFilter('viewed')">Viewed 🔵</button>
+            <button type="button" class="filter-pill" id="filter-complaint-in_progress" onclick="setComplaintFilter('in_progress')">In Progress 🟠</button>
+            <button type="button" class="filter-pill" id="filter-complaint-resolved" onclick="setComplaintFilter('resolved')">Resolved 🟢</button>
+            <button type="button" class="filter-pill" id="filter-complaint-rejected" onclick="setComplaintFilter('rejected')">Rejected 🔴</button>
+          </div>
+        </div>
+
+        <!-- Toolbar with Category Filter and Live Search -->
+        <div class="toolbar-container" style="gap: 12px; flex-wrap: wrap;">
+          <div class="search-wrapper" style="flex: 1; min-width: 240px;">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="wardenComplaintSearchInput" class="search-input" placeholder="Search complaints by Student Name, USN, or Room...">
+          </div>
+
+          <div style="min-width: 180px;">
+            <select id="wardenComplaintCategoryFilter" class="form-select" style="padding: 8px 12px; font-size: 0.875rem;">
+              <option value="all">All Categories</option>
+              <option value="Electrical">Electrical</option>
+              <option value="Plumbing / Water">Plumbing / Water</option>
+              <option value="Room Maintenance">Room Maintenance</option>
+              <option value="Bathroom">Bathroom</option>
+              <option value="Furniture">Furniture</option>
+              <option value="Internet / Wi-Fi">Internet / Wi-Fi</option>
+              <option value="Cleaning">Cleaning</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" id="downloadComplaintsPdfBtn" class="btn btn-primary btn-sm" onclick="downloadFilteredComplaintsPDF()" style="background: #D97706; border-color: #D97706; font-weight: 700;">
+              📥 Download Complaints List (PDF)
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="clearWardenResolvedComplaints()" style="color: #DC2626; border-color: #FECACA; background: #FEF2F2; font-weight: 700;">
+              🗑️ Clear Resolved Complaints
+            </button>
+            <button id="refreshWardenComplaintsBtn" class="btn btn-secondary btn-sm">Refresh Complaints</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Complaint ID</th>
+                <th>Student &amp; USN</th>
+                <th>Room No.</th>
+                <th>Category &amp; Title</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="wardenComplaintTableBody">
+              <tr>
+                <td colspan="7" class="empty-state">Loading hostel complaints...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Hostel Notices & Announcements Section -->
+      <div class="table-card" id="wardenNoticesSection" style="grid-column: 1 / -1; margin-bottom: 36px; border-top: 4px solid #9333EA; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); background: #ffffff; overflow: hidden;">
+        <div class="table-card-header" style="padding: 18px 24px; background: #F8FAFC; border-bottom: 1px solid var(--color-border);">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="background: #9333EA; color: #FFFFFF; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 0.5px;">SECTION 5</span>
+              <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #0F172A;">📢 Hostel Notices &amp; Announcements</h3>
+            </div>
+            <p class="text-muted text-small" style="margin-top: 4px;">Create and manage official announcements for residents of your assigned hostel</p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="refreshWardenNoticesBtn" class="btn btn-secondary btn-sm">Refresh Notices</button>
+            <button id="openCreateNoticeModalBtn" class="btn btn-primary btn-sm" onclick="openCreateNoticeModalDirect()">+ Create Notice</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Category</th>
+                <th>Title</th>
+                <th>Published Date</th>
+                <th>Published By</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="wardenNoticeTableBody">
+              <tr>
+                <td colspan="6" class="empty-state">Loading hostel notices...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Mess Menu Management Section -->
+      <div class="table-card" id="wardenMessMenuSection" style="grid-column: 1 / -1; margin-bottom: 36px; border-top: 4px solid #059669; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); background: #ffffff; overflow: hidden;">
+        <div class="table-card-header" style="padding: 18px 24px; background: #F8FAFC; border-bottom: 1px solid var(--color-border);">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="background: #059669; color: #FFFFFF; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 0.5px;">SECTION 6</span>
+              <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #0F172A;">🍱 Mess Menu Management</h3>
+            </div>
+            <p class="text-muted text-small" style="margin-top: 4px;">Update the weekly 7-day meal schedule for residents of your assigned hostel</p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="refreshWardenMessMenuBtn" class="btn btn-secondary btn-sm">Refresh Menu</button>
+            <button id="openEditMessMenuModalBtn" class="btn btn-primary btn-sm" onclick="openEditMessMenuModalDirect()">✏️ Edit Weekly Menu</button>
+          </div>
+        </div>
+
+        <div id="wardenMessMenuContent" style="padding: 16px;">
+          <span class="text-muted">Loading weekly mess menu...</span>
+        </div>
+      </div>
+
+      <!-- Hostel Rooms & Student Allocation Section -->
+      <div class="table-card" id="wardenRoomsSection" style="grid-column: 1 / -1; margin-bottom: 36px; border-top: 4px solid #DC2626; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); background: #ffffff; overflow: hidden;">
+        <div class="table-card-header" style="padding: 18px 24px; background: #F8FAFC; border-bottom: 1px solid var(--color-border);">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="background: #DC2626; color: #FFFFFF; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 0.5px;">SECTION 7</span>
+              <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #0F172A;">🏢 Room &amp; Bed Allocation Management</h3>
+            </div>
+            <p class="text-muted text-small" style="margin-top: 4px;">Manage hostel rooms, monitor occupancy, and assign residents to rooms</p>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="refreshWardenRoomsBtn" class="btn btn-secondary btn-sm">Refresh Rooms</button>
+            <button id="openAddRoomModalBtn" class="btn btn-primary btn-sm" onclick="openAddRoomModalDirect()">+ Add Room</button>
+          </div>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="toolbar-container" style="flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+          <div class="search-wrapper" style="flex: 1; min-width: 200px;">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="wardenRoomSearchInput" class="search-input" placeholder="Search by Room Number (e.g. B-204)...">
+          </div>
+
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <select id="wardenRoomStatusFilter" class="form-select" style="width: auto; min-width: 140px;">
+              <option value="all" selected>All Statuses</option>
+              <option value="vacant">Vacant 🟢</option>
+              <option value="available">Available 🟡</option>
+              <option value="full">Full 🔴</option>
+            </select>
+
+            <select id="wardenRoomFloorFilter" class="form-select" style="width: auto; min-width: 130px;">
+              <option value="all" selected>All Floors</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Room Cards Grid Container -->
+        <div id="wardenRoomGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px;">
+          <span class="text-muted">Loading hostel rooms...</span>
+        </div>
+      </div>
+
+      <!-- Hostel & College Settings Section -->
+      <div class="table-card" id="wardenSettingsSection" style="grid-column: 1 / -1; margin-bottom: 36px; border-top: 4px solid #475569; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); background: #ffffff; overflow: hidden;">
+        <div class="table-card-header" style="padding: 18px 24px; background: #F8FAFC; border-bottom: 1px solid var(--color-border);">
+          <div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span style="background: #475569; color: #FFFFFF; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 0.5px;">SECTION 8</span>
+              <h3 style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #0F172A;">⚙️ Hostel &amp; College Settings</h3>
+            </div>
+            <p class="text-muted text-small" style="margin-top: 4px;">Manage institutional branding, college logo, and your assigned hostel photo</p>
+          </div>
+          <span class="status-badge approved" id="settingsHostelBadge">Boys Hostel Warden</span>
+        </div>
+
+        <div style="padding: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px;">
+          <!-- 1. Shared College Branding Settings -->
+          <div style="background: var(--color-bg); padding: 18px; border-radius: var(--radius-lg); border: 1px solid var(--color-border-light);">
+            <h4 style="font-size: 1rem; font-weight: 700; color: var(--color-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <span>🏛️ College Branding &amp; Information</span>
+            </h4>
+            <p class="text-muted text-small" style="margin-bottom: 16px;">Shared institution information visible across landing page &amp; student portal.</p>
+
+            <form id="collegeSettingsForm">
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label for="setCollegeName" class="form-label">College Name</label>
+                <input type="text" id="setCollegeName" class="form-input" placeholder="e.g. Imperial Institute of Technology" required>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label for="setCollegeAddress" class="form-label">College Address / Location</label>
+                <input type="text" id="setCollegeAddress" class="form-input" placeholder="e.g. Main Campus, Knowledge Park, City">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label for="setCollegeEmail" class="form-label">Contact Email</label>
+                <input type="email" id="setCollegeEmail" class="form-input" placeholder="e.g. info@college.edu">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label for="setCollegePhone" class="form-label">Contact Phone</label>
+                <input type="text" id="setCollegePhone" class="form-input" placeholder="e.g. +91 8284 220261">
+              </div>
+
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label for="setCollegeWebsite" class="form-label">College Website URL</label>
+                <input type="text" id="setCollegeWebsite" class="form-input" placeholder="e.g. www.klsvdit.ac.in">
+              </div>
+
+              <!-- College Logo Upload / Preview -->
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label">College Logo</label>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div id="collegeLogoPreviewBox" style="width: 80px; height: 80px; border-radius: 8px; border: 2px dashed var(--color-border); display: flex; align-items: center; justify-content: center; background: #FFFFFF; overflow: hidden;">
+                    <span class="text-muted text-small" id="collegeLogoPlaceholderText">No Logo</span>
+                    <img id="collegeLogoImg" src="" alt="College Logo" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+                  </div>
+
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <label class="btn btn-secondary btn-sm" style="cursor: pointer; margin: 0;">
+                      📷 Choose Logo File
+                      <input type="file" id="collegeLogoFileInput" accept="image/*" style="display: none;">
+                    </label>
+                    <input type="url" id="collegeLogoUrlInput" class="form-input" placeholder="Or paste Logo Image URL..." style="flex: 1; min-width: 180px; font-size: 12px;">
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" id="saveCollegeSettingsBtn" class="btn btn-primary btn-sm btn-block">
+                💾 Save College Settings
+              </button>
+            </form>
+          </div>
+
+          <!-- 2. Warden Hostel Photo & Details -->
+          <div style="background: var(--color-bg); padding: 18px; border-radius: var(--radius-lg); border: 1px solid var(--color-border-light);">
+            <h4 style="font-size: 1rem; font-weight: 700; color: var(--color-primary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <span>🏠 <span id="settingsHostelTitleText">Boys Hostel Photo &amp; Info</span></span>
+            </h4>
+            <p class="text-muted text-small" style="margin-bottom: 16px;">Specific hostel photo and details managed by you (<span id="settingsHostelScopeLabel">Boys Hostel Warden</span>).</p>
+
+            <form id="hostelSettingsForm">
+              <div class="form-group" style="margin-bottom: 12px;">
+                <label for="setHostelName" class="form-label">Hostel Name</label>
+                <input type="text" id="setHostelName" class="form-input" placeholder="e.g. Boys Hostel Block A" required>
+              </div>
+
+              <div class="form-group" style="margin-bottom: 14px;">
+                <label for="setHostelDescription" class="form-label">Hostel Description / Facilities</label>
+                <textarea id="setHostelDescription" class="form-input" rows="3" placeholder="e.g. Modern rooms with Wi-Fi, study hall, 24/7 security..."></textarea>
+              </div>
+
+              <!-- Hostel Photo Upload / Preview -->
+              <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label">Hostel Photo</label>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div id="hostelPhotoPreviewBox" style="width: 100%; height: 160px; border-radius: 8px; border: 2px dashed var(--color-border); display: flex; align-items: center; justify-content: center; background: #FFFFFF; overflow: hidden;">
+                    <span class="text-muted text-small" id="hostelPhotoPlaceholderText">No Hostel Photo Uploaded</span>
+                    <img id="hostelPhotoImg" src="" alt="Hostel Photo" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                  </div>
+
+                  <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <label class="btn btn-secondary btn-sm" style="cursor: pointer; margin: 0;">
+                      📷 Choose Photo File
+                      <input type="file" id="hostelPhotoFileInput" accept="image/*" style="display: none;">
+                    </label>
+                    <input type="url" id="hostelPhotoUrlInput" class="form-input" placeholder="Or paste Hostel Photo URL..." style="flex: 1; min-width: 180px; font-size: 12px;">
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" id="saveHostelSettingsBtn" class="btn btn-primary btn-sm btn-block">
+                💾 Save Hostel Settings
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity Feed Section -->
+      <div class="table-card" id="wardenRecentActivitySection" style="grid-column: 1 / -1; margin-bottom: var(--space-2xl);">
+        <div class="table-card-header">
+          <div>
+            <h3>Recent Activity Feed</h3>
+            <p class="text-muted text-small">Live activity log generated from real hostel updates and submissions</p>
+          </div>
+          <button id="refreshActivityBtn" class="btn btn-secondary btn-sm">Refresh Feed</button>
+        </div>
+
+        <div id="recentActivityList" style="display: flex; flex-direction: column; gap: 8px; padding: 16px;">
+          <span class="text-muted">Loading live activity feed...</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Add Room Modal -->
+  <div class="modal-backdrop" id="addRoomModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Add New Hostel Room</h3>
+        <button type="button" class="modal-close-btn" id="closeAddRoomModalBtn">&times;</button>
+      </div>
+
+      <form id="addRoomForm">
+        <div class="modal-body">
+          <div class="auto-badge-info">
+            <span>Hostel Category is locked to <strong id="addRoomHostelLabel">Boys Hostel</strong> from your warden profile.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="room-number" class="form-label">Room Number *</label>
+            <input type="text" id="room-number" class="form-input" placeholder="e.g. B-204" required>
+          </div>
+
+          <div class="form-group">
+            <label for="room-floor" class="form-label">Floor Number *</label>
+            <input type="number" id="room-floor" class="form-input" min="1" max="20" placeholder="e.g. 2" required>
+          </div>
+
+          <div class="form-group">
+            <label for="room-capacity" class="form-label">Room Capacity (Max Students) *</label>
+            <input type="number" id="room-capacity" class="form-input" min="1" max="10" value="4" required>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelAddRoomModalBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveRoomBtn">Create Room</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- View Room Students Modal -->
+  <div class="modal-backdrop" id="viewRoomStudentsModal">
+    <div class="modal-card" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3>Room Details &amp; Occupants</h3>
+        <button type="button" class="modal-close-btn" id="closeViewRoomModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="roomDetailBanner" class="status-banner approved" style="margin-bottom: 14px;">
+          <span id="roomBannerTitleText">Room B-204 — Floor 2</span>
+          <span id="roomBannerOccupancyText" class="text-small">3 / 4 Students Occupied</span>
+        </div>
+
+        <h4 style="font-size: 14px; color: var(--color-primary); margin-bottom: 8px;">Assigned Resident Students:</h4>
+        <div id="roomStudentsList" style="display: flex; flex-direction: column; gap: 8px;">
+          <span class="text-muted">Loading room occupants...</span>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="closeViewRoomFooterBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assign / Change Room Modal -->
+  <div class="modal-backdrop" id="assignStudentModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="assignModalHeaderTitle">Assign Student to Room</h3>
+        <button type="button" class="modal-close-btn" id="closeAssignModalBtn">&times;</button>
+      </div>
+
+      <form id="assignStudentForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="assign-target-room" class="form-label">Target Room *</label>
+            <input type="text" id="assign-target-room" class="form-input" readonly style="font-weight: 700; background: var(--color-bg);">
+          </div>
+
+          <div class="form-group">
+            <label for="assign-student-select" class="form-label">Select Student *</label>
+            <select id="assign-student-select" class="form-select" required>
+              <option value="" disabled selected>Select a student to assign...</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelAssignModalBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="confirmAssignBtn">Confirm Allocation</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit Mess Menu Modal -->
+  <div class="modal-backdrop" id="editMessMenuModal">
+    <div class="modal-card" style="max-width: 800px; max-height: 90vh; overflow-y: auto;">
+      <div class="modal-header">
+        <h3>Edit Weekly Mess Menu</h3>
+        <button type="button" class="modal-close-btn" id="closeEditMessMenuModalBtn">&times;</button>
+      </div>
+
+      <form id="editMessMenuForm">
+        <div class="modal-body">
+          <div class="auto-badge-info">
+            <span>Hostel Category is locked to <strong id="editMessMenuHostelLabel">Boys Hostel</strong> from your warden profile.</span>
+          </div>
+
+          <p class="text-muted text-small" style="margin-bottom: 16px;">Enter the Breakfast, Lunch, Evening Snacks, and Dinner menu for each day of the week:</p>
+
+          <!-- Day Fieldsets -->
+          <div style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Monday -->
+            <div style="background: var(--color-bg); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--color-border-light);">
+              <h4 style="color: var(--color-primary); margin-bottom: 8px; font-size: 14px;">📅 MONDAY</h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px;">
+                <input type="text" id="mm-mon-b" class="form-input" placeholder="Breakfast (e.g. Idli + Sambar)">
+                <input type="text" id="mm-mon-l" class="form-input" placeholder="Lunch (e.g. Rice + Dal + Veg)">
+                <input type="text" id="mm-mon-s" class="form-input" placeholder="Snacks (e.g. Tea + Biscuits)">
+                <input type="text" id="mm-mon-d" class="form-input" placeholder="Dinner (e.g. Chapati + Curry)">
+              </div>
+            </div>
+
+            <!-- Tuesday -->
+            <div style="background: var(--color-bg); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--color-border-light);">
+              <h4 style="color: var(--color-primary); margin-bottom: 8px; font-size: 14px;">📅 TUESDAY</h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px;">
+                <input type="text" id="mm-tue-b" class="form-input" placeholder="Breakfast">
+                <input type="text" id="mm-tue-l" class="form-input" placeholder="Lunch">
+                <input type="text" id="mm-tue-s" class="form-input" placeholder="Snacks">
+                <input type="text" id="mm-tue-d" class="form-input" placeholder="Dinner">
+              </div>
+            </div>
+
+            <!-- Wednesday -->
+            <div style="background: var(--color-bg); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--color-border-light);">
+              <h4 style="color: var(--color-primary); margin-bottom: 8px; font-size: 14px;">📅 WEDNESDAY</h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px;">
+                <input type="text" id="mm-wed-b" class="form-input" placeholder="Breakfast">
+                <input type="text" id="mm-wed-l" class="form-input" placeholder="Lunch">
+                <input type="text" id="mm-wed-s" class="form-input" placeholder="Snacks">
+                <input type="text" id="mm-wed-d" class="form-input" placeholder="Dinner">
+              </div>
+            </div>
+
+            <!-- Thursday -->
+            <div style="background: var(--color-bg); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--color-border-light);">
+              <h4 style="color: var(--color-primary); margin-bottom: 8px; font-size: 14px;">📅 THURSDAY</h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px;">
+                <input type="text" id="mm-thu-b" class="form-input" placeholder="Breakfast">
+                <input type="text" id="mm-thu-l" class="form-input" placeholder="Lunch">
+                <input type="text" id="mm-thu-s" class="form-input" placeholder="Snacks">
+                <input type="text" id="mm-thu-d" class="form-input" placeholder="Dinner">
+              </div>
+            </div>
+
+            <!-- Friday -->
+            <div style="background: var(--color-bg); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--color-border-light);">
+              <h4 style="color: var(--color-primary); margin-bottom: 8px; font-size: 14px;">📅 FRIDAY</h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px;">
+                <input type="text" id="mm-fri-b" class="form-input" placeholder="Breakfast">
+                <input type="text" id="mm-fri-l" class="form-input" placeholder="Lunch">
+                <input type="text" id="mm-fri-s" class="form-input" placeholder="Snacks">
+                <input type="text" id="mm-fri-d" class="form-input" placeholder="Dinner">
+              </div>
+            </div>
+
+            <!-- Saturday -->
+            <div style="background: var(--color-bg); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--color-border-light);">
+              <h4 style="color: var(--color-primary); margin-bottom: 8px; font-size: 14px;">📅 SATURDAY</h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px;">
+                <input type="text" id="mm-sat-b" class="form-input" placeholder="Breakfast">
+                <input type="text" id="mm-sat-l" class="form-input" placeholder="Lunch">
+                <input type="text" id="mm-sat-s" class="form-input" placeholder="Snacks">
+                <input type="text" id="mm-sat-d" class="form-input" placeholder="Dinner">
+              </div>
+            </div>
+
+            <!-- Sunday -->
+            <div style="background: var(--color-bg); padding: 12px 16px; border-radius: 8px; border: 1px solid var(--color-border-light);">
+              <h4 style="color: var(--color-primary); margin-bottom: 8px; font-size: 14px;">📅 SUNDAY</h4>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px;">
+                <input type="text" id="mm-sun-b" class="form-input" placeholder="Breakfast">
+                <input type="text" id="mm-sun-l" class="form-input" placeholder="Lunch">
+                <input type="text" id="mm-sun-s" class="form-input" placeholder="Snacks">
+                <input type="text" id="mm-sun-d" class="form-input" placeholder="Dinner">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+          <button type="button" class="btn btn-secondary" id="resetMessMenuBtn" style="color: #DC2626;">Reset Menu</button>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-secondary" id="cancelEditMessMenuModalBtn">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveMessMenuBtn">Save Weekly Menu</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Create Notice Modal -->
+  <div class="modal-backdrop" id="createNoticeModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Create Hostel Notice</h3>
+        <button type="button" class="modal-close-btn" id="closeCreateNoticeModalBtn">&times;</button>
+      </div>
+
+      <form id="createNoticeForm">
+        <div class="modal-body">
+          <div class="auto-badge-info">
+            <span>Hostel Category is automatically set to <strong id="createNoticeHostelLabel">Boys Hostel</strong> from your warden profile.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="notice-category" class="form-label">Notice Category *</label>
+            <select id="notice-category" class="form-select" required>
+              <option value="General" selected>General</option>
+              <option value="Important">Important ⚠️</option>
+              <option value="Emergency">Emergency 🚨</option>
+              <option value="Maintenance">Maintenance 🛠️</option>
+              <option value="Mess">Mess 🍲</option>
+              <option value="Holiday">Holiday 🎉</option>
+              <option value="Other">Other 📌</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="notice-title" class="form-label">Notice Title *</label>
+            <input type="text" id="notice-title" class="form-input" placeholder="e.g. Mandatory Hostel Meeting Today" required>
+          </div>
+
+          <div class="form-group">
+            <label for="notice-description" class="form-label">Notice Description *</label>
+            <textarea id="notice-description" class="form-input" rows="4" placeholder="Write complete notice description..." required style="resize: vertical;"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="notice-image" class="form-label">Optional Image Attachment</label>
+            <input type="file" id="notice-image" class="form-input" accept="image/*">
+            <span class="text-muted text-small" style="display: block; margin-top: 4px;">Supported: JPG, PNG, WEBP (Max 5MB)</span>
+          </div>
+
+          <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" id="notice-is-active" checked style="width: 18px; height: 18px; cursor: pointer;">
+            <label for="notice-is-active" style="font-weight: 600; cursor: pointer;">Publish as Active immediately</label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelCreateNoticeModalBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="publishNoticeBtn">Publish Notice</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Update Warden Complaint Modal -->
+  <div class="modal-backdrop" id="updateWardenComplaintModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Manage Maintenance Complaint</h3>
+        <button type="button" class="modal-close-btn" id="closeUpdateComplaintModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="wardenComplaintBanner" class="status-banner pending">
+          <span id="wCompBannerStatusText">🟡 Submitted</span>
+          <span id="wCompBannerAuditText" class="text-small">Reported by Student</span>
+        </div>
+
+        <div class="profile-details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Student Name</span>
+            <span class="detail-value" id="wCompStudentName">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">USN</span>
+            <span class="detail-value" id="wCompUsn">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Room Number</span>
+            <span class="detail-value" id="wCompRoom">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Category</span>
+            <span class="detail-value" id="wCompCategory">--</span>
+          </div>
+        </div>
+
+        <div style="margin-top: var(--space-md);">
+          <span class="detail-label">Problem Title &amp; Description</span>
+          <p id="wCompTitleDesc" style="font-size: var(--font-size-base); margin-top: 4px; padding: 12px; background-color: var(--color-bg); border-radius: var(--radius-md); border: 1px solid var(--color-border-light); white-space: pre-wrap;">--</p>
+        </div>
+
+        <div id="wCompPhotoWrapper" style="margin-top: var(--space-md); display: none;">
+          <span class="detail-label">Uploaded Student Photo</span>
+          <div style="margin-top: 6px; text-align: center;">
+            <img id="wCompPhotoImg" src="" alt="Student Photo" style="max-width: 100%; max-height: 250px; border-radius: var(--radius-md); border: 1px solid var(--color-border);" />
+          </div>
+        </div>
+
+        <!-- Audit Trail Info -->
+        <div id="wCompAuditTrailBox" style="margin-top: var(--space-md); padding: 10px 14px; background: #F8FAFC; border-radius: var(--radius-md); border: 1px solid var(--color-border-light); font-size: 12px; color: #475569;">
+          <span id="wCompAuditViewed" style="display: block;">• Viewed: Not yet</span>
+          <span id="wCompAuditStarted" style="display: block;">• Work Started: Not yet</span>
+          <span id="wCompAuditResolved" style="display: block;">• Resolved: Not yet</span>
+        </div>
+
+        <hr style="margin: var(--space-lg) 0; border: none; border-top: 1px solid var(--color-border-light);" />
+
+        <div class="form-group">
+          <label for="update-complaint-response" class="form-label">Resolution Note / Warden Remark (Visible to Student)</label>
+          <textarea id="update-complaint-response" class="form-input" rows="3" placeholder="e.g. Water leakage in Room B-204 was repaired." style="resize: vertical;"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary" id="cancelUpdateComplaintModalBtn">Close</button>
+        <button type="button" class="btn btn-danger btn-sm" id="btnRejectComplaint" style="margin-left: auto;">Reject</button>
+        <button type="button" class="btn btn-warning btn-sm" id="btnStartWorkComplaint">Start Work</button>
+        <button type="button" class="btn btn-success" id="btnResolveComplaint">Mark as Resolved</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Student Modal -->
+  <div class="modal-backdrop" id="addStudentModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Register New Student</h3>
+        <button type="button" class="modal-close-btn" id="closeAddStudentModalBtn">&times;</button>
+      </div>
+
+      <form id="addStudentForm" novalidate>
+        <div class="modal-body">
+          <div class="auto-badge-info">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>Hostel Category is automatically set to <strong id="modalHostelCategoryLabel">Boys Hostel</strong> based on your warden authorization.</span>
+          </div>
+
+          <div class="form-group">
+            <label for="add-name" class="form-label">Full Name *</label>
+            <input type="text" id="add-name" class="form-input" placeholder="e.g. Rahul Sharma" required>
+          </div>
+
+          <div class="form-grid-2col">
+            <div class="form-group">
+              <label for="add-usn" class="form-label">USN (University Seat Number) *</label>
+              <input type="text" id="add-usn" class="form-input" placeholder="e.g. 1AB22CS001" required>
+            </div>
+
+            <div class="form-group">
+              <label for="add-dob" class="form-label">Date of Birth *</label>
+              <input type="date" id="add-dob" class="form-input" required>
+            </div>
+          </div>
+
+          <div class="form-grid-2col">
+            <div class="form-group">
+              <label for="add-course" class="form-label">Course *</label>
+              <select id="add-course" class="form-select" required>
+                <option value="" disabled selected>Select course</option>
+                <option value="btech">B.Tech</option>
+                <option value="be">B.E.</option>
+                <option value="bca">BCA</option>
+                <option value="bsc">B.Sc</option>
+                <option value="mtech">M.Tech</option>
+                <option value="mca">MCA</option>
+                <option value="msc">M.Sc</option>
+                <option value="mba">MBA</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="add-semester" class="form-label">Semester *</label>
+              <select id="add-semester" class="form-select" required>
+                <option value="" disabled selected>Select semester</option>
+                <option value="1">1st Semester</option>
+                <option value="2">2nd Semester</option>
+                <option value="3">3rd Semester</option>
+                <option value="4">4th Semester</option>
+                <option value="5">5th Semester</option>
+                <option value="6">6th Semester</option>
+                <option value="7">7th Semester</option>
+                <option value="8">8th Semester</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-grid-2col">
+            <div class="form-group">
+              <label for="add-room" class="form-label">Room Number *</label>
+              <input type="text" id="add-room" class="form-input" placeholder="e.g. B-204" required>
+            </div>
+
+            <div class="form-group">
+              <label for="add-phone" class="form-label">Student Phone Number *</label>
+              <input type="tel" id="add-phone" class="form-input" placeholder="e.g. 9876543210" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="add-parent-phone" class="form-label">Parent Phone Number *</label>
+            <input type="tel" id="add-parent-phone" class="form-input" placeholder="e.g. 9876543211" required>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelAddStudentBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveStudentBtn">Register Student</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- View Student Details Modal -->
+  <div class="modal-backdrop" id="viewStudentModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Student Details</h3>
+        <button type="button" class="modal-close-btn" id="closeViewStudentModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="profile-card-header" style="padding-bottom: var(--space-md); margin-bottom: var(--space-md);">
+          <div class="avatar-circle" id="viewAvatar">S</div>
+          <div>
+            <h2 id="viewName">Student Name</h2>
+            <p id="viewUsn" class="text-muted">USN: --</p>
+          </div>
+        </div>
+
+        <div class="profile-details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Full Name</span>
+            <span class="detail-value" id="viewDetailName">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">USN</span>
+            <span class="detail-value" id="viewDetailUsn">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Course</span>
+            <span class="detail-value" id="viewDetailCourse">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Semester</span>
+            <span class="detail-value" id="viewDetailSemester">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Date of Birth</span>
+            <span class="detail-value" id="viewDetailDob">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Room Number</span>
+            <span class="detail-value" id="viewDetailRoom">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Hostel Category</span>
+            <span class="detail-value" id="viewDetailHostel">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Registration Status</span>
+            <span class="detail-value" id="viewDetailStatus">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Student Phone</span>
+            <span class="detail-value" id="viewDetailStudentPhone">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Parent Phone</span>
+            <span class="detail-value" id="viewDetailParentPhone">--</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="closeViewModalFooterBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rejection Reason Modal -->
+  <div class="modal-backdrop" id="rejectLeaveModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Reject Leave Request</h3>
+        <button type="button" class="modal-close-btn" id="closeRejectModalBtn">&times;</button>
+      </div>
+
+      <form id="rejectLeaveForm">
+        <div class="modal-body">
+          <p style="margin-bottom: var(--space-md);">Please provide a short reason for rejecting this leave request for <strong id="rejectStudentName">Student</strong>:</p>
+
+          <div class="form-group">
+            <label for="rejectionReasonInput" class="form-label">Rejection Reason *</label>
+            <textarea id="rejectionReasonInput" class="form-input" rows="3" placeholder="e.g. Inadequate reason / Attendance requirement not met" required style="resize: vertical;"></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelRejectModalBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="background-color: var(--color-danger); border-color: var(--color-danger);" id="confirmRejectBtn">Confirm Rejection</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Leave Request Full Detail Modal -->
+  <div class="modal-backdrop" id="viewLeaveDetailModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Leave Request Details</h3>
+        <button type="button" class="modal-close-btn" id="closeLeaveDetailModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div id="leaveModalStatusBanner" class="status-banner pending">
+          <span id="bannerStatusText">🟡 Pending Review</span>
+          <span id="bannerAuditText" class="text-small">Awaiting warden decision</span>
+        </div>
+
+        <div class="profile-card-header" style="padding-bottom: var(--space-md); margin-bottom: var(--space-md);">
+          <div class="avatar-circle" id="leaveViewAvatar">L</div>
+          <div>
+            <h2 id="leaveViewStudentName">Student Name</h2>
+            <p id="leaveViewUsn" class="text-muted">USN: --</p>
+          </div>
+        </div>
+
+        <div class="profile-details-grid">
+          <div class="detail-item">
+            <span class="detail-label">Leave Type</span>
+            <span class="detail-value" id="leaveViewType">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Duration</span>
+            <span class="detail-value" id="leaveViewDuration">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">From Date</span>
+            <span class="detail-value" id="leaveViewFromDate">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">To Date</span>
+            <span class="detail-value" id="leaveViewToDate">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Room Number</span>
+            <span class="detail-value" id="leaveViewRoom">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Course &amp; Sem</span>
+            <span class="detail-value" id="leaveViewCourseSem">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Student Phone</span>
+            <span class="detail-value" id="leaveViewStudentPhone">--</span>
+          </div>
+
+          <div class="detail-item">
+            <span class="detail-label">Parent Phone</span>
+            <span class="detail-value" id="leaveViewParentPhone">--</span>
+          </div>
+        </div>
+
+        <div style="margin-top: var(--space-lg);">
+          <span class="detail-label">Reason for Leave</span>
+          <p id="leaveViewReason" style="font-size: var(--font-size-base); margin-top: 4px; padding: 12px; background-color: var(--color-bg); border-radius: var(--radius-md); border: 1px solid var(--color-border-light);">--</p>
+        </div>
+
+        <div id="rejectionReasonBlock" style="margin-top: var(--space-md); display: none;">
+          <span class="detail-label" style="color: var(--color-danger);">Rejection Reason</span>
+          <p id="leaveViewRejectionReason" style="font-size: var(--font-size-base); margin-top: 4px; padding: 12px; background-color: #FEF2F2; color: #991B1B; border-radius: var(--radius-md); border: 1px solid #FCA5A5;">--</p>
+        </div>
+      </div>
+
+      <div class="modal-footer" id="leaveModalFooterActions">
+        <button type="button" class="btn btn-secondary" id="closeLeaveDetailFooterBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Official Leave Letter Website Preview Modal -->
+  <div class="modal-backdrop" id="leaveLetterPreviewModal">
+    <div class="modal-card" style="max-width: 860px; max-height: 90vh; display: flex; flex-direction: column;">
+      <div class="modal-header">
+        <h3>Official Leave Letter Preview</h3>
+        <button type="button" class="modal-close-btn" onclick="closeLeaveLetterPreview()">&times;</button>
+      </div>
+
+      <div class="modal-body" style="overflow-y: auto; flex: 1; padding: var(--space-md);">
+        <div id="previewModalContentContainer">
+          <!-- Dynamically populated leave letter HTML -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="closeLeaveLetterPreview()">Close</button>
+        <button type="button" class="btn btn-primary" style="background-color: var(--color-secondary); border-color: var(--color-secondary);" onclick="downloadActiveLeaveLetterPDF()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 6px; vertical-align: middle;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Download PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastNotification" class="toast-notification">Notification message</div>
+
+  <!-- PDF Generation Library & Service -->
+  <script src="js/html2pdf.bundle.min.js?v=11.0"></script>
+  <script src="js/pdf-service.js?v=11.0"></script>
+
+  <!-- Firebase & App Scripts -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js?v=16.0"></script>
+  <script src="js/main.js?v=16.0"></script>
+  <script src="js/auth-service.js?v=16.0"></script>
+  <script src="js/firestore-service.js?v=16.0"></script>
+  <script src="js/dashboard-warden.js?v=16.0"></script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hostel Incharge Portal — KLS VDIT Hostel Management System</title>
+  <meta name="description" content="Hostel Incharge management dashboard for KLS VDIT Hostel Management System.">
+
+  <!-- Favicon & Styles -->
+  <link rel="icon" type="image/png" href="assets/hero-illustration.jpg">
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+
+  <!-- Top Navbar Header -->
+  <header class="navbar container-fluid" role="navigation">
+    <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+      <a href="index.html" class="navbar-brand" style="gap: 10px;">
+        <img id="navCollegeLogoImg" src="" alt="College Logo" style="height: 32px; width: auto; object-fit: contain; display: none;">
+        <span id="navCollegeNameText" style="font-weight: 800; font-size: 1.1rem; color: var(--color-primary);">KLS VDIT Hostel Incharge Portal</span>
+      </a>
+
+      <div class="dashboard-user-info" style="display: flex; align-items: center; gap: 14px;">
+        <div style="text-align: right;">
+          <div style="font-weight: 700; font-size: 0.9rem; color: var(--color-primary);" id="inchargeNameHeader">Incharge Officer</div>
+          <div style="font-size: 0.75rem; color: var(--color-text-muted);" id="inchargeUnitHeader">Boys Hostel Unit</div>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm theme-toggle-btn" onclick="toggleTheme()" style="font-weight: 700;">🌙 Dark</button>
+        <button id="inchargeLogoutBtn" class="btn btn-secondary btn-sm">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="dashboard-main container" style="padding-top: 24px; padding-bottom: 48px;">
+
+    <!-- Welcome & Unit Selector Header -->
+    <div class="dashboard-welcome" style="background: linear-gradient(135deg, #0284C7, #0369A1); color: white; padding: 24px; border-radius: var(--radius-xl); margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <span class="status-badge" style="background: rgba(255,255,255,0.2); color: white; font-weight: 700; font-size: 12px; margin-bottom: 6px; display: inline-block;" id="inchargeUnitBadge">Boys Hostel Unit</span>
+        <h1 style="font-size: 1.6rem; font-weight: 800; margin: 0; color: white;" id="inchargeWelcomeHeading">Welcome, Hostel Incharge</h1>
+        <p style="margin-top: 4px; opacity: 0.9; font-size: 0.9rem;">Warden Authorization, Hostel Information &amp; Gate Pass Supervision</p>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <label for="switchUnitSelect" style="font-weight: 600; font-size: 13px; color: white;">Hostel Unit Scope:</label>
+        <select id="switchUnitSelect" class="form-input" style="width: auto; background: white; color: var(--color-text); font-weight: 700; border-radius: 8px;">
+          <option value="boys">Boys Hostel</option>
+          <option value="girls1">Girls Hostel 1</option>
+          <option value="girls2">Girls Hostel 2</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Summary Stats Grid -->
+    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 28px;">
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #E0F2FE; color: #0284C7;">🛡️</div>
+        <div class="stat-details">
+          <span class="stat-label">Assigned Wardens</span>
+          <span class="stat-value" id="statWardensCount">0</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #FEF3C7; color: #D97706;">⏳</div>
+        <div class="stat-details">
+          <span class="stat-label">Pending Authorizations</span>
+          <span class="stat-value" id="statPendingWardensCount">0</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #EFF6FF; color: #2563EB;">🎓</div>
+        <div class="stat-details">
+          <span class="stat-label">Unit Residents</span>
+          <span class="stat-value" id="statUnitStudentsCount">0</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon" style="background: #FCE7F3; color: #DB2777;">📋</div>
+        <div class="stat-details">
+          <span class="stat-label">Active Gate Passes</span>
+          <span class="stat-value" id="statActivePassesCount">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Warden Authorization Section -->
+    <div class="table-card" style="margin-bottom: 32px; border-top: 4px solid #0284C7; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); background: #ffffff; overflow: hidden;">
+      <div class="table-card-header" style="background: #F8FAFC; border-bottom: 1px solid var(--color-border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 18px 24px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="background: #0284C7; color: #FFFFFF; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 0.5px;">SECTION 1</span>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #0F172A; margin: 0;">👨‍🏫 Warden Authorization &amp; Access Control</h3>
+          </div>
+          <p class="text-muted text-small" style="margin-top: 4px;">Approve new warden account requests or toggle active warden logins for your hostel unit</p>
+        </div>
+        <button type="button" id="openRegisterWardenBtn" class="btn btn-primary btn-sm" style="background: #0284C7; border-color: #0284C7; font-weight: 700;">
+          + Register New Warden
+        </button>
+      </div>
+
+      <div style="padding: 20px;">
+        <div class="table-container" style="overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Warden Name</th>
+                <th>Email Address</th>
+                <th>Phone Number</th>
+                <th>Designation</th>
+                <th>Hostel Unit</th>
+                <th>Authorization Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="wardensTableBody">
+              <tr>
+                <td colspan="7" class="empty-state">Loading warden accounts...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hostel Info & Curfew Settings Section -->
+    <div class="table-card" style="margin-bottom: 32px; border-top: 4px solid #4F46E5; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); background: #ffffff; overflow: hidden;">
+      <div class="table-card-header" style="background: #F8FAFC; border-bottom: 1px solid var(--color-border); padding: 18px 24px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="background: #4F46E5; color: #FFFFFF; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 0.5px;">SECTION 2</span>
+          <h3 style="font-size: 1.15rem; font-weight: 700; color: #0F172A; margin: 0;">🏛️ Market Curfew Time &amp; Hostel Unit Information</h3>
+        </div>
+      </div>
+
+      <form id="hostelInfoForm" style="padding: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+          <div class="form-group">
+            <label for="hostelUnitNameInput" class="form-label">Hostel Unit Name</label>
+            <input type="text" id="hostelUnitNameInput" class="form-input" placeholder="e.g. KLS VDIT Boys Hostel" required>
+          </div>
+
+          <div class="form-group">
+            <label for="hostelCurfewTimeInput" class="form-label">Market Curfew Time</label>
+            <input type="time" id="hostelCurfewTimeInput" class="form-input" value="21:00" required>
+            <span class="text-muted text-small" style="margin-top: 4px; display: block;">Boys Incharge sets boys return time; Girls Hostel 1 and Girls Hostel 2 set their own market return deadlines.</span>
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="hostelPhotoUrlInput" class="form-label">Hostel Photo URL / Base64</label>
+            <input type="text" id="hostelPhotoUrlInput" class="form-input" placeholder="https://example.com/photo.jpg or upload file below">
+            <input type="file" id="hostelPhotoFileInput" accept="image/*" style="margin-top: 8px; font-size: 13px;">
+          </div>
+
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="hostelDescriptionInput" class="form-label">Hostel Description &amp; Facilities Note</label>
+            <textarea id="hostelDescriptionInput" class="form-input" rows="3" placeholder="Facilities, study rooms, mess note..."></textarea>
+          </div>
+        </div>
+
+        <div style="margin-top: 16px; text-align: right;">
+          <button type="submit" class="btn btn-primary" id="saveHostelInfoBtn" style="background: #4F46E5; border-color: #4F46E5; font-weight: 700;">
+            💾 Save Unit Information &amp; Curfew
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Gate Pass Activity & Entry/Exit Logs Section -->
+    <div class="table-card" style="margin-bottom: 32px; border-top: 4px solid #0D9488; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); background: #ffffff; overflow: hidden;">
+      <div class="table-card-header" style="background: #F8FAFC; border-bottom: 1px solid var(--color-border); padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="background: #0D9488; color: #FFFFFF; font-weight: 800; padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; letter-spacing: 0.5px;">SECTION 3</span>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #0F172A; margin: 0;">🚪 Gate Pass Activity &amp; Entry/Exit Records</h3>
+          </div>
+          <p class="text-muted text-small" style="margin-top: 4px;">Real-time exit/entry timestamps, QR pass statuses &amp; late-return flags</p>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="clearInchargeGateActivity()" style="color: #DC2626; border-color: #FECACA; background: #FEF2F2; font-weight: 700;">
+            🗑️ Clear Activity History
+          </button>
+          <button type="button" id="refreshGatePassesBtn" class="btn btn-secondary btn-sm" style="font-weight: 600;">🔄 Refresh Activity</button>
+        </div>
+      </div>
+
+      <div style="padding: 20px;">
+        <div class="table-container" style="overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Pass Token</th>
+                <th>Student Name</th>
+                <th>USN</th>
+                <th>Room</th>
+                <th>Leave Type</th>
+                <th>Exit Timestamp</th>
+                <th>Entry Timestamp</th>
+                <th>Curfew Status</th>
+              </tr>
+            </thead>
+            <tbody id="gatePassesTableBody">
+              <tr>
+                <td colspan="8" class="empty-state">Loading gate pass activity...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Register Warden Modal -->
+  <div class="modal-backdrop" id="registerWardenModal" role="dialog" aria-hidden="true" style="display: none;">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header" style="background: #F8FAFC; border-bottom: 1px solid var(--color-border);">
+        <h3 id="wardenModalTitle">➕ Register New Warden</h3>
+        <button class="modal-close-btn" id="closeRegisterWardenModalBtn" type="button" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="registerWardenForm">
+        <div class="modal-body" style="display: flex; flex-direction: column; gap: 14px;">
+          <div class="form-group">
+            <label for="modalWardenName" class="form-label" style="font-weight: 700;">Warden Full Name</label>
+            <input type="text" id="modalWardenName" class="form-input" placeholder="e.g. Suresh Patil" required>
+          </div>
+
+          <div class="form-group">
+            <label for="modalWardenEmail" class="form-label" style="font-weight: 700;">Email Address</label>
+            <input type="email" id="modalWardenEmail" class="form-input" placeholder="e.g. warden.boys@klsvdit.ac.in" required>
+          </div>
+
+          <div class="form-group">
+            <label for="modalWardenPhone" class="form-label" style="font-weight: 700;">Phone Number</label>
+            <input type="tel" id="modalWardenPhone" class="form-input" placeholder="e.g. 9876543210" required>
+          </div>
+
+          <div class="form-group">
+            <label for="modalWardenDesignation" class="form-label" style="font-weight: 700;">Designation</label>
+            <input type="text" id="modalWardenDesignation" class="form-input" value="Senior Hostel Warden" required>
+          </div>
+
+          <div class="form-group">
+            <label for="modalWardenUnit" class="form-label" style="font-weight: 700;">Assigned Hostel Unit</label>
+            <select id="modalWardenUnit" class="form-input" required>
+              <option value="boys">Boys Hostel</option>
+              <option value="girls1">Girls Hostel 1</option>
+              <option value="girls2">Girls Hostel 2</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="modalWardenPassword" class="form-label" style="font-weight: 700;">Initial Account Password</label>
+            <input type="password" id="modalWardenPassword" class="form-input" value="warden123" required>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="background: #F8FAFC;">
+          <button type="button" class="btn btn-secondary" id="cancelRegisterWardenModalBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="saveRegisterWardenSubmitBtn" style="background: #0284C7; border-color: #0284C7;">
+            💾 Register Warden
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js?v=3.0"></script>
+  <script src="js/main.js?v=3.0"></script>
+  <script src="js/auth-service.js?v=3.0"></script>
+  <script src="js/firestore-service.js?v=3.0"></script>
+  <script src="js/dashboard-incharge.js?v=3.0"></script>
+</body>
+</html>

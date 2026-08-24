@@ -1,0 +1,961 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* =========================================================
+       HOSTELHUB FIRESTORE SECURITY RULES
+       Project: paper-ai-6ef75
+
+       Roles:
+       - Incharge
+       - Warden
+       - Student
+       - Gate Security
+
+       Hostel Units:
+       - boys
+       - girls1
+       - girls2
+
+       IMPORTANT:
+       The application should store hostelUnit consistently as:
+          boys
+          girls1
+          girls2
+          all
+
+       Legacy fields hostelType / hosteltype are supported
+       where possible.
+       ========================================================= */
+
+
+    /* =========================================================
+       AUTHENTICATION
+       ========================================================= */
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+
+    /* =========================================================
+       USER DOCUMENT
+       ========================================================= */
+
+    function hasUserDoc() {
+      return isAuthenticated() &&
+        exists(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        );
+    }
+
+    function getUserData() {
+      return get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      ).data;
+    }
+
+
+    /* =========================================================
+       WARDEN DOCUMENT
+       ========================================================= */
+
+    function hasWardenDoc() {
+      return isAuthenticated() &&
+        exists(
+          /databases/$(database)/documents/wardens/$(request.auth.uid)
+        );
+    }
+
+    function getWardenData() {
+      return get(
+        /databases/$(database)/documents/wardens/$(request.auth.uid)
+      ).data;
+    }
+
+
+    /* =========================================================
+       INCHARGE DOCUMENT
+       ========================================================= */
+
+    function hasInchargeDoc() {
+      return isAuthenticated() &&
+        exists(
+          /databases/$(database)/documents/incharges/$(request.auth.uid)
+        );
+    }
+
+    function getInchargeData() {
+      return get(
+        /databases/$(database)/documents/incharges/$(request.auth.uid)
+      ).data;
+    }
+
+
+    /* =========================================================
+       ROLE RESOLUTION
+       ========================================================= */
+
+    function getRole() {
+
+      return !isAuthenticated()
+        ? 'anonymous'
+
+        : request.auth.token.role != null
+          ? request.auth.token.role
+
+        : hasUserDoc() && getUserData().role != null
+          ? getUserData().role
+
+        : hasWardenDoc()
+          ? 'warden'
+
+        : hasInchargeDoc()
+          ? 'incharge'
+
+        : 'anonymous';
+    }
+
+
+    /* =========================================================
+       ROLE CHECKS
+
+       Supports common capitalization variants.
+       ========================================================= */
+
+    function isStudent() {
+      return isAuthenticated() &&
+        (
+          getRole() == 'student' ||
+          getRole() == 'Student'
+        );
+    }
+
+    function isWarden() {
+      return isAuthenticated() &&
+        (
+          getRole() == 'warden' ||
+          getRole() == 'Warden'
+        );
+    }
+
+    function isIncharge() {
+      return isAuthenticated() &&
+        (
+          getRole() == 'incharge' ||
+          getRole() == 'Incharge' ||
+          getRole() == 'inCharge'
+        );
+    }
+
+    function isSecurity() {
+      return isAuthenticated() &&
+        (
+          getRole() == 'gateSecurity' ||
+          getRole() == 'Gate Security' ||
+          getRole() == 'gate-security' ||
+          getRole() == 'security' ||
+          getRole() == 'Security'
+        );
+    }
+
+
+    /* =========================================================
+       HOSTEL UNIT
+       ========================================================= */
+
+    function getHostelUnit() {
+
+      return !isAuthenticated()
+        ? 'none'
+
+        : request.auth.token.hostelUnit != null
+          ? request.auth.token.hostelUnit
+
+        : hasUserDoc() && getUserData().hostelUnit != null
+          ? getUserData().hostelUnit
+
+        : hasUserDoc() && getUserData().hostelType != null
+          ? getUserData().hostelType
+
+        : hasUserDoc() && getUserData().hosteltype != null
+          ? getUserData().hosteltype
+
+        : hasWardenDoc() && getWardenData().hostelUnit != null
+          ? getWardenData().hostelUnit
+
+        : hasWardenDoc() && getWardenData().hostelType != null
+          ? getWardenData().hostelType
+
+        : hasWardenDoc() && getWardenData().hosteltype != null
+          ? getWardenData().hosteltype
+
+        : hasInchargeDoc() && getInchargeData().hostelUnit != null
+          ? getInchargeData().hostelUnit
+
+        : hasInchargeDoc() && getInchargeData().hostelType != null
+          ? getInchargeData().hostelType
+
+        : hasInchargeDoc() && getInchargeData().hosteltype != null
+          ? getInchargeData().hosteltype
+
+        : 'none';
+    }
+
+
+    function validHostelUnit(unit) {
+      return unit == 'boys' ||
+             unit == 'girls1' ||
+             unit == 'girls2';
+    }
+
+
+    /*
+     * Used mainly for individual document reads.
+     */
+    function sameHostel(unit) {
+      return isAuthenticated() &&
+        validHostelUnit(getHostelUnit()) &&
+        unit == getHostelUnit();
+    }
+
+
+    /* =========================================================
+       USERS
+       ========================================================= */
+
+    match /users/{userId} {
+
+      allow read: if isAuthenticated() &&
+        (
+          request.auth.uid == userId ||
+          isWarden() ||
+          isIncharge()
+        );
+
+      allow create: if isAuthenticated() &&
+        request.auth.uid == userId;
+
+      allow update: if isAuthenticated() &&
+        (
+          request.auth.uid == userId ||
+          isIncharge()
+        );
+
+      allow delete: if isIncharge();
+    }
+
+
+    /* =========================================================
+       STUDENTS
+       ========================================================= */
+
+    match /students/{studentId} {
+
+      /*
+       * Individual student read.
+       */
+      allow get: if isAuthenticated() &&
+        (
+          request.auth.uid == studentId ||
+
+          (
+            resource.data.email != null &&
+            request.auth.token.email != null &&
+            resource.data.email == request.auth.token.email
+          ) ||
+
+          (
+            isWarden() &&
+            resource.data.hostelUnit == getHostelUnit()
+          ) ||
+
+          (
+            isIncharge() &&
+            resource.data.hostelUnit == getHostelUnit()
+          )
+        );
+
+
+      /*
+       * Collection listing for Warden/Incharge.
+       *
+       * Client must query using:
+       * where("hostelUnit", "==", currentHostelUnit)
+       */
+      allow list: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow create: if isAuthenticated() &&
+        (
+          isStudent() ||
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow update: if isAuthenticated() &&
+        (
+          request.auth.uid == studentId ||
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow delete: if isWarden() || isIncharge();
+    }
+
+
+    /* =========================================================
+       WARDENS
+       ========================================================= */
+
+    match /wardens/{wardenId} {
+
+      allow get: if isAuthenticated() &&
+        (
+          request.auth.uid == wardenId ||
+
+          (
+            isWarden() &&
+            resource.data.hostelUnit == getHostelUnit()
+          ) ||
+
+          (
+            isIncharge() &&
+            resource.data.hostelUnit == getHostelUnit()
+          )
+        );
+
+
+      allow list: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow create: if isAuthenticated() && request.auth.uid == wardenId;
+
+
+      allow update: if isAuthenticated() &&
+        (
+          request.auth.uid == wardenId ||
+
+          (
+            isIncharge() &&
+            resource.data.hostelUnit == getHostelUnit()
+          )
+        );
+
+
+      allow delete: if isIncharge();
+    }
+
+
+    /* =========================================================
+       INCHARGES
+       ========================================================= */
+
+    match /incharges/{inchargeId} {
+
+      allow read: if isAuthenticated() &&
+        (
+          request.auth.uid == inchargeId ||
+          isWarden() ||
+          isIncharge()
+        );
+
+      allow create: if isAuthenticated() && request.auth.uid == inchargeId;
+
+      allow update: if isAuthenticated() && request.auth.uid == inchargeId;
+
+      allow delete: if isIncharge();
+    }
+
+
+    /* =========================================================
+       LEAVE REQUESTS
+       ========================================================= */
+
+    match /leaveRequests/{leaveId} {
+
+      allow get: if isAuthenticated() &&
+        (
+          (
+            isStudent() &&
+            (
+              resource.data.studentId == request.auth.uid ||
+
+              (
+                request.auth.token.usn != null &&
+                resource.data.usn == request.auth.token.usn
+              )
+            )
+          ) ||
+
+          (
+            isWarden() &&
+            resource.data.hostelUnit == getHostelUnit()
+          ) ||
+
+          (
+            isIncharge() &&
+            resource.data.hostelUnit == getHostelUnit()
+          ) ||
+
+          isSecurity()
+        );
+
+
+      /*
+       * Warden/Incharge dashboard queries.
+       */
+      allow list: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow create: if isAuthenticated() &&
+        isStudent();
+
+
+      allow update: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge() ||
+          isSecurity()
+        );
+
+
+      allow delete: if isWarden() || isIncharge();
+    }
+
+
+    /* =========================================================
+       GATE PASSES
+       ========================================================= */
+
+    match /gatePasses/{passId} {
+
+      allow get: if isAuthenticated() &&
+        (
+          isSecurity() ||
+
+          (
+            isStudent() &&
+            (
+              resource.data.studentId == request.auth.uid ||
+
+              (
+                request.auth.token.usn != null &&
+                resource.data.usn == request.auth.token.usn
+              )
+            )
+          ) ||
+
+          (
+            isWarden() &&
+            resource.data.hostelUnit == getHostelUnit()
+          ) ||
+
+          (
+            isIncharge() &&
+            resource.data.hostelUnit == getHostelUnit()
+          )
+        );
+
+
+      /*
+       * Warden/Incharge dashboard list.
+       */
+      allow list: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge() ||
+          isSecurity()
+        );
+
+
+      allow create: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isSecurity()
+        );
+
+
+      allow update: if isAuthenticated() &&
+        (
+          isSecurity() ||
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow delete: if isWarden() || isIncharge();
+    }
+
+
+    /* =========================================================
+       MARKET PASSES
+       ========================================================= */
+
+    match /marketPasses/{passId} {
+
+      allow get: if isAuthenticated() &&
+       (
+         isSecurity() ||
+         (
+           isStudent() &&
+           (
+             resource.data.studentId == request.auth.uid ||
+             (
+               request.auth.token.usn != null &&
+               resource.data.usn == request.auth.token.usn
+             )
+           )
+         ) ||
+         (
+           isWarden() &&
+           resource.data.hostelUnit == getHostelUnit()
+         ) ||
+         (
+           isIncharge() &&
+           resource.data.hostelUnit == getHostelUnit()
+         )
+       );
+
+      allow list: if isAuthenticated() &&
+       (
+         isStudent() ||
+         isWarden() ||
+         isIncharge() ||
+         isSecurity()
+       );
+
+      allow create: if isAuthenticated() &&
+       (
+         isStudent() ||
+         isWarden() ||
+         isIncharge() ||
+         isSecurity()
+       );
+
+      allow update: if isAuthenticated() &&
+       (
+         isSecurity() ||
+         isWarden() ||
+         isIncharge() ||
+         isStudent()
+       );
+
+      allow delete: if isWarden() || isIncharge();
+    }
+
+
+    /* =========================================================
+       NOTIFICATIONS
+       ========================================================= */
+
+    match /notifications/{notifId} {
+
+      allow read: if isAuthenticated() &&
+        (
+          isStudent() ||
+          isWarden() ||
+          isIncharge() ||
+          isSecurity()
+        );
+
+      allow create: if isAuthenticated();
+
+      allow update: if isAuthenticated();
+
+      allow delete: if isWarden() || isIncharge();
+    }
+
+
+    /* =========================================================
+       PARENT NOTIFICATION LOGS
+       ========================================================= */
+
+    match /parentNotificationLogs/{logId} {
+
+      allow read: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+      allow create: if isAuthenticated() &&
+        (
+          isSecurity() ||
+          isWarden() ||
+          isIncharge()
+        );
+
+      allow update: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+      allow delete: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+    }
+
+
+    /* =========================================================
+       NOTIFICATION LOGS
+       ========================================================= */
+
+    match /notificationLogs/{logId} {
+
+      allow read: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+      allow create: if isAuthenticated();
+
+      allow update: if isAuthenticated();
+
+      allow delete: if isWarden() || isIncharge();
+    }
+
+
+    /* =========================================================
+       COMPLAINTS
+       ========================================================= */
+
+    match /complaints/{complaintId} {
+
+      allow get: if isAuthenticated() &&
+        (
+          (
+            isStudent() &&
+            (
+              resource.data.studentId == request.auth.uid ||
+
+              (
+                request.auth.token.usn != null &&
+                resource.data.usn == request.auth.token.usn
+              )
+            )
+          ) ||
+
+          (
+            isWarden() &&
+            resource.data.hostelUnit == getHostelUnit()
+          ) ||
+
+          (
+            isIncharge() &&
+            resource.data.hostelUnit == getHostelUnit()
+          )
+        );
+
+
+      allow list: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow create: if isAuthenticated() &&
+        isStudent();
+
+
+      allow update: if isAuthenticated() &&
+        (
+          isStudent() ||
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow delete: if isWarden() || isIncharge();
+    }
+
+
+    /* =========================================================
+       ROOMS
+       ========================================================= */
+
+    match /rooms/{roomId} {
+
+      allow get: if isAuthenticated() &&
+        (
+          (
+            isStudent() &&
+            resource.data.studentId == request.auth.uid
+          ) ||
+
+          (
+            isWarden() &&
+            resource.data.hostelUnit == getHostelUnit()
+          ) ||
+
+          (
+            isIncharge() &&
+            resource.data.hostelUnit == getHostelUnit()
+          )
+        );
+
+
+      allow list: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge() ||
+          isStudent()
+        );
+
+
+      allow create: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow update: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow delete: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+    }
+
+
+    /* =========================================================
+       NOTICES
+       ========================================================= */
+
+    match /notices/{noticeId} {
+
+      allow get: if isAuthenticated() &&
+        (
+          resource.data.hostelUnit == 'all' ||
+
+          (
+            isWarden() &&
+            resource.data.hostelUnit == getHostelUnit()
+          ) ||
+
+          (
+            isIncharge() &&
+            resource.data.hostelUnit == getHostelUnit()
+          ) ||
+
+          (
+            isStudent() &&
+            resource.data.hostelUnit == getHostelUnit()
+          )
+        );
+
+
+      allow list: if isAuthenticated() &&
+        (
+          isStudent() ||
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow create: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow update: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow delete: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+    }
+
+
+    /* =========================================================
+       MESS
+       ========================================================= */
+
+    match /mess/{messId} {
+
+      allow get: if isAuthenticated() &&
+        (
+          resource.data.hostelUnit == 'all' ||
+
+          (
+            isWarden() &&
+            resource.data.hostelUnit == getHostelUnit()
+          ) ||
+
+          (
+            isIncharge() &&
+            resource.data.hostelUnit == getHostelUnit()
+          ) ||
+
+          (
+            isStudent() &&
+            resource.data.hostelUnit == getHostelUnit()
+          )
+        );
+
+
+      allow list: if isAuthenticated() &&
+        (
+          isStudent() ||
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow create: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow update: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow delete: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+    }
+
+
+    /* =========================================================
+       HOSTELS
+       ========================================================= */
+
+    match /hostels/{hostelId} {
+
+      allow read: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge() ||
+          isStudent()
+        );
+
+
+      allow create: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow update: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+
+
+      allow delete: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+    }
+
+
+    /* =========================================================
+       ADMINS
+       ========================================================= */
+
+    match /admins/{adminId} {
+
+      allow read: if isAuthenticated() &&
+        (
+          request.auth.uid == adminId ||
+          isIncharge()
+        );
+
+      allow create: if isIncharge();
+
+      allow update: if isIncharge();
+
+      allow delete: if isIncharge();
+    }
+
+
+    /* =========================================================
+       COLLEGE SETTINGS
+       ========================================================= */
+
+    match /settings/college {
+
+      allow read: if true;
+
+      allow write: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+    }
+
+
+    /* =========================================================
+       OTHER SETTINGS
+       ========================================================= */
+
+    match /settings/{settingId} {
+
+      allow read: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge() ||
+          isStudent()
+        );
+
+
+      allow write: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge()
+        );
+    }
+
+
+    /* =========================================================
+       DEFAULT DENY
+       ========================================================= */
+
+  }
+}

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="KLS VDIT Hostel Management System — Official KLS Vishwanathrao Deshpande Institute of Technology Hostel Portal, Haliyal.">
+  <title>KLS VDIT Hostel Management System</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/design-system.css">
+  <link rel="stylesheet" href="css/landing.css">
+</head>
+<body>
+
+  <!-- ============================== Navbar ============================== -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="container">
+      <!-- Brand -->
+      <a href="index.html" class="navbar-brand" style="gap: 10px;">
+        <img id="navCollegeLogoImg" src="assets/kls-vdit-logo.jpg" alt="KLS VDIT College Logo" style="height: 36px; width: auto; object-fit: contain; display: inline-block;">
+        <svg id="navDefaultLogo" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="display: none;">
+          <rect x="3" y="14" width="26" height="15" rx="2" fill="#2563EB"/>
+          <path d="M16 3L3 14H29L16 3Z" fill="#1B2A4A"/>
+          <rect x="8" y="18" width="5" height="5" rx="1" fill="white" opacity="0.9"/>
+          <rect x="19" y="18" width="5" height="5" rx="1" fill="white" opacity="0.9"/>
+          <rect x="13" y="22" width="6" height="7" rx="1" fill="white" opacity="0.9"/>
+        </svg>
+        <span id="navCollegeNameText">KLS VDIT</span>
+      </a>
+
+      <!-- Desktop nav links -->
+      <div class="navbar-nav" id="navLinks">
+        <a href="#home">Home</a>
+        <a href="#features">Features</a>
+        <a href="#about">About</a>
+      </div>
+
+      <!-- Desktop action buttons -->
+      <div class="navbar-actions" id="navActions" style="gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary btn-sm theme-toggle-btn" onclick="toggleTheme()" style="font-weight: 700;">🌙 Dark</button>
+        <a href="student-login.html" class="btn btn-secondary btn-sm">Student</a>
+        <a href="warden-login.html" class="btn btn-primary btn-sm">Warden</a>
+        <a href="incharge-login.html" class="btn btn-secondary btn-sm" style="border-color: #0284C7; color: #0284C7; font-weight: 700;">Incharge</a>
+        <a href="security-login.html" class="btn btn-secondary btn-sm" style="border-color: #D97706; color: #D97706; font-weight: 700;">Gate Security</a>
+      </div>
+
+      <!-- Hamburger (mobile) -->
+      <button class="hamburger" id="hamburger" aria-label="Toggle navigation menu" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+
+    <!-- Mobile menu -->
+    <div class="mobile-menu" id="mobileMenu">
+      <a href="#home">Home</a>
+      <a href="#features">Features</a>
+      <a href="#about">About</a>
+      <div class="mobile-actions">
+        <a href="student-login.html" class="btn btn-secondary btn-block">Student Login</a>
+        <a href="warden-login.html" class="btn btn-primary btn-block">Warden Login</a>
+        <a href="incharge-login.html" class="btn btn-secondary btn-block" style="border-color: #0284C7; color: #0284C7;">Incharge Portal</a>
+        <a href="security-login.html" class="btn btn-secondary btn-block" style="border-color: #D97706; color: #D97706;">Gate Security</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- ============================== Hero ============================== -->
+    <section class="hero" id="home">
+      <div class="container">
+        <div class="hero-content">
+          <div class="hero-badge">
+            <span class="pulse-dot"></span>
+            Official College Portal
+          </div>
+
+          <h1 id="landingHeroTitle">KLS VDIT <span class="highlight">Hostel Management System</span></h1>
+
+          <p class="hero-description" id="landingHeroDescription">
+            Simple, Digital &amp; Efficient Hostel Management — Manage student records, digital leave applications, room allocations, complaints, and weekly mess menus.
+          </p>
+
+          <div class="hero-actions">
+            <a href="student-login.html" class="btn btn-primary btn-lg">Student Login</a>
+            <a href="warden-login.html" class="btn btn-secondary btn-lg">Warden Login</a>
+            <a href="incharge-login.html" class="btn btn-secondary btn-lg" style="border-color: #0284C7; color: #0284C7;">Incharge Portal</a>
+            <a href="security-login.html" class="btn btn-secondary btn-lg" style="border-color: #D97706; color: #D97706;">Gate Security</a>
+          </div>
+
+          <div class="hero-highlights">
+            <div class="hero-highlight">
+              <div class="hero-highlight-icon">🏠</div>
+              <div class="hero-highlight-label">Room Allocation</div>
+            </div>
+            <div class="hero-highlight">
+              <div class="hero-highlight-icon">📋</div>
+              <div class="hero-highlight-label">Leave Passes</div>
+            </div>
+            <div class="hero-highlight">
+              <div class="hero-highlight-icon">🍽</div>
+              <div class="hero-highlight-label">Mess Schedule</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <img
+            id="landingHeroImg"
+            src="assets/kls-vdit-hostel.jpg"
+            alt="KLS VDIT Hostel Building — Official Campus Hostel"
+            loading="eager"
+            fetchpriority="high"
+          >
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== Features ============================== -->
+    <section class="features section" id="features">
+      <div class="container">
+        <div class="section-header fade-in">
+          <h2>Everything You Need</h2>
+          <p>A complete suite of tools to manage your hostel operations efficiently and effortlessly.</p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Feature 1 -->
+          <div class="card feature-card fade-in stagger-1">
+            <div class="card-icon">🏠</div>
+            <h3>Hostel &amp; Room Management</h3>
+            <p>Allocate rooms, track occupancy, and manage hostel blocks — all in one place.</p>
+          </div>
+
+          <!-- Feature 2 -->
+          <div class="card feature-card fade-in stagger-2">
+            <div class="card-icon">📋</div>
+            <h3>Digital Leave Management</h3>
+            <p>Submit, track, and approve leave requests digitally with real-time status updates.</p>
+          </div>
+
+          <!-- Feature 3 -->
+          <div class="card feature-card fade-in stagger-3">
+            <div class="card-icon">🛠</div>
+            <h3>Complaint &amp; Maintenance</h3>
+            <p>Report and resolve hostel issues efficiently with a streamlined complaint system.</p>
+          </div>
+
+          <!-- Feature 4 -->
+          <div class="card feature-card fade-in stagger-4">
+            <div class="card-icon">🍽</div>
+            <h3>Mess Management</h3>
+            <p>View daily menus, share feedback, and manage meal plans effortlessly.</p>
+          </div>
+
+          <!-- Feature 5 -->
+          <div class="card feature-card fade-in stagger-5">
+            <div class="card-icon">📢</div>
+            <h3>Hostel Notices</h3>
+            <p>Broadcast important announcements and keep all residents informed instantly.</p>
+          </div>
+
+          <!-- Feature 6 -->
+          <div class="card feature-card fade-in stagger-6">
+            <div class="card-icon">🤖</div>
+            <h3>HostelAI Assistant</h3>
+            <p>Get smart suggestions, automated help, and instant answers to hostel queries.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== Hostel Separation ============================== -->
+    <section class="hostel-section section" id="about">
+      <div class="container">
+        <div class="section-header fade-in">
+          <h2>One Platform, Both Hostels</h2>
+          <p>Seamlessly manage boys and girls hostels from a single application with dedicated environments.</p>
+        </div>
+
+        <div class="hostel-grid">
+          <!-- Boys Hostel -->
+          <div class="card hostel-card boys fade-in stagger-1">
+            <div class="hostel-card-icon">👨</div>
+            <h3>Boys Hostel</h3>
+            <p>Dedicated management for boys' hostel — rooms, wardens, students, and operations.</p>
+          </div>
+
+          <!-- Girls Hostel -->
+          <div class="card hostel-card girls fade-in stagger-2">
+            <div class="hostel-card-icon">👩</div>
+            <h3>Girls Hostel</h3>
+            <p>Dedicated management for girls' hostel — rooms, wardens, students, and operations.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================== College Branding ============================== -->
+    <section class="college-branding section">
+      <div class="container">
+        <div class="section-header fade-in">
+          <h2>Official College Platform</h2>
+          <p>KLS VDIT Hostel Management System is tailored specifically for our institution's campus.</p>
+        </div>
+
+        <div class="branding-card card fade-in">
+          <div id="landingCollegeLogoWrapper" class="branding-logo-placeholder" aria-label="KLS VDIT Official Logo" style="overflow: hidden; display: flex; align-items: center; justify-content: center; background: transparent; border: none;">
+            <span id="landingLogoPlaceholderText" style="display: none;">KLS VDIT<br>LOGO</span>
+            <img id="landingCollegeLogoImg" src="assets/kls-vdit-logo.jpg" alt="KLS VDIT Logo" style="width: 100%; height: 100%; object-fit: contain; display: block;">
+          </div>
+          <h3 id="landingCollegeName">KLS Vishwanathrao Deshpande Institute of Technology (KLS VDIT), Haliyal</h3>
+          <p id="landingCollegeAddress" class="branding-subtitle">Udyog Vidya Nagar, Haliyal, Uttara Kannada, Karnataka - 581329 | Phone: +91 8284 220261 | Web: www.klsvdit.ac.in</p>
+          <div class="branding-note" id="landingCollegeNote">
+            🔧 Configurable by authorized administrators — upload college logo, institution name, address, and hero photos.
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============================== Footer ============================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <h3 id="footerCollegeNameText">KLS VDIT Hostel Management System</h3>
+          <p>Official Hostel Management System of KLS Vishwanathrao Deshpande Institute of Technology (KLS VDIT), Haliyal.</p>
+        </div>
+
+        <div class="footer-links">
+          <h4>Quick Links</h4>
+          <a href="#home">Home</a>
+          <a href="#features">Features</a>
+          <a href="#about">About</a>
+        </div>
+
+        <div class="footer-links">
+          <h4>Portals</h4>
+          <a href="student-login.html">Student Login</a>
+          <a href="warden-login.html">Warden Login</a>
+          <a href="incharge-login.html">Incharge Login</a>
+          <a href="security-login.html">Gate Security</a>
+        </div>
+      </div>
+
+      <!-- Developer Credit Section -->
+      <div style="margin-top: 36px; padding: 24px 28px; background: rgba(255, 255, 255, 0.06); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.12); backdrop-filter: blur(10px); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 18px;">
+          <!-- Simple Boy Developer Logo Icon -->
+          <div style="width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #2563EB, #1D4ED8); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35); border: 2.5px solid #60A5FA; flex-shrink: 0;">
+            👨‍💻
+          </div>
+
+          <div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #93C5FD; font-weight: 700; margin-bottom: 2px;">
+              Designed &amp; Developed By
+            </div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: #FFFFFF; letter-spacing: -0.01em;">
+              Manoj Hebballi
+            </div>
+            <div style="font-size: 0.875rem; color: #E2E8F0; font-weight: 500; margin-top: 2px;">
+              Computer Science &amp; Engineering | <span style="color: #60A5FA; font-weight: 600;">KLS VDIT, Haliyal</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <a href="mailto:manojhebballi86@gmail.com" class="btn" style="background: rgba(255, 255, 255, 0.12); color: #FFFFFF; border: 1px solid rgba(255, 255, 255, 0.25); font-weight: 600; font-size: 0.85rem; padding: 10px 18px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s ease;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <span style="color: #FFFFFF; font-weight: 600;">manojhebballi86@gmail.com</span>
+          </a>
+
+          <a href="https://www.linkedin.com/in/manoj-b-h-260799343" target="_blank" rel="noopener noreferrer" class="btn" style="background: #0A66C2; color: #FFFFFF; border: 1px solid #0A66C2; font-weight: 600; font-size: 0.85rem; padding: 10px 18px; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(10, 102, 194, 0.3); transition: all 0.2s ease;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
+            <span>LinkedIn Profile</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="footer-bottom" style="margin-top: 20px;">
+        <span>&copy; 2026 KLS Vishwanathrao Deshpande Institute of Technology (KLS VDIT), Haliyal. All rights reserved.</span>
+        <span>KLS VDIT Hostel Management System</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Firebase SDK (Compat Version for local file:// support) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js?v=2.4"></script>
+  <script src="js/firestore-service.js?v=2.4"></script>
+  <script src="js/main.js?v=2.0"></script>
+</body>
+</html>

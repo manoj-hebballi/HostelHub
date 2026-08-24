@@ -1,0 +1,156 @@
+/* ============================================
+   HOSTELHUB — Login Page Styles
+   Shared between student-login and warden-login
+   ============================================ */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #EEF2FF 0%, var(--color-bg) 50%, #F0FDF4 100%);
+  padding: var(--space-xl);
+}
+
+.login-container {
+  width: 100%;
+  max-width: 440px;
+}
+
+/* ---- College branding at top ---- */
+.login-branding {
+  text-align: center;
+  margin-bottom: var(--space-xl);
+}
+
+.login-branding-logo {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-md);
+  border: 2px dashed var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-md);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  background-color: var(--color-card);
+  line-height: 1.3;
+}
+
+.login-branding h3 {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+/* ---- Login card ---- */
+.login-card {
+  background-color: var(--color-card);
+  border-radius: var(--radius-xl);
+  padding: var(--space-2xl);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--color-border-light);
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: var(--space-2xl);
+}
+
+.login-header-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto var(--space-lg);
+  font-size: 1.5rem;
+}
+
+.login-header-icon.student {
+  background-color: rgba(var(--color-primary-light-rgb), 0.1);
+}
+
+.login-header-icon.warden {
+  background-color: rgba(22, 163, 74, 0.1);
+}
+
+.login-header h1 {
+  font-size: var(--font-size-2xl);
+  margin-bottom: var(--space-xs);
+}
+
+.login-header p {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+/* ---- Login form specific ---- */
+.login-form .btn-block {
+  margin-top: var(--space-sm);
+}
+
+/* ---- Footer links ---- */
+.login-footer {
+  text-align: center;
+  margin-top: var(--space-lg);
+}
+
+.login-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-top: var(--space-xl);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  transition: color var(--transition-base);
+}
+
+.login-back:hover {
+  color: var(--color-primary);
+}
+
+.login-back svg {
+  width: 16px;
+  height: 16px;
+  transition: transform var(--transition-base);
+}
+
+.login-back:hover svg {
+  transform: translateX(-2px);
+}
+
+/* ============================================
+   Responsive — Login
+   ============================================ */
+@media (max-width: 480px) {
+  .login-page {
+    padding: var(--space-md);
+    align-items: flex-start;
+    padding-top: var(--space-2xl);
+  }
+
+  .login-card {
+    padding: var(--space-xl) var(--space-lg);
+  }
+}
+
+/* Alert Message Box */
+.login-alert {
+  padding: 12px 16px;
+  background-color: #FEF2F2;
+  border: 1px solid #FCA5A5;
+  color: #991B1B;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  margin-bottom: var(--space-lg);
+  line-height: 1.4;
+}
+
+.login-alert.hidden {
+  display: none;
+}
