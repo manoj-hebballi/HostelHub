@@ -203,8 +203,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Initial Load
-  await refreshAllData();
+  // Initial Load driven by Firebase Auth state initialization
+  let isInitialized = false;
+
+  const runInitialLoad = async (user) => {
+    if (isInitialized) return;
+    isInitialized = true;
+
+    const firebaseUser = user || ((typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null);
+    if (firebaseUser) {
+      const unit = typeof getHostelUnitFromEmail === 'function' ? getHostelUnitFromEmail(firebaseUser.email) : 'boys';
+      currentIncharge = {
+        id: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        name: firebaseUser.displayName || `${unit === 'girls2' ? 'Girls Hostel 2' : unit === 'girls1' ? 'Girls Hostel 1' : 'Boys Hostel'} Incharge`,
+        hostelUnit: unit,
+        hostelType: unit,
+        role: 'incharge'
+      };
+      currentUnit = unit.toLowerCase();
+      if (typeof setInchargeSession === 'function') setInchargeSession(currentIncharge);
+      updateHeaderScope();
+    }
+
+    await refreshAllData();
+  };
+
+  if (typeof firebase !== 'undefined' && firebase.auth) {
+    firebase.auth().onAuthStateChanged(async (user) => {
+      await runInitialLoad(user);
+    });
+  } else {
+    await runInitialLoad(null);
+  }
 });
 
 function updateHeaderScope() {
