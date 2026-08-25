@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       try {
         if (typeof registerWardenAccount === 'function') {
-          await registerWardenAccount({
+          const res = await registerWardenAccount({
             name,
             email,
             phone,
@@ -95,19 +95,22 @@ document.addEventListener('DOMContentLoaded', () => {
             status: 'pending',
             isActive: false
           });
+
+          closeWardenModal();
+          regForm.reset();
+
+          const unitLabel = hostelUnit === 'boys' ? 'Boys Hostel' : hostelUnit === 'girls1' ? 'Girls Hostel 1' : 'Girls Hostel 2';
+          if (res && res.storage === 'firestore') {
+            alert(`Application Submitted Successfully to Cloud!\n\nWarden: ${name}\nUnit: ${unitLabel}\nStatus: PENDING\n\nYour application is now visible to the ${unitLabel} Incharge.`);
+          } else {
+            alert(`Application Saved Locally (Offline Mode).\n\nNote: Cloud submission failed (${res?.error || 'permission error'}). Will sync when online.`);
+          }
+        } else {
+          closeWardenModal();
         }
-
-        closeWardenModal();
-        regForm.reset();
-
-        const unitLabel = hostelUnit === 'boys' ? 'Boys Hostel' : hostelUnit === 'girls1' ? 'Girls Hostel 1' : 'Girls Hostel 2';
-        alert(`Application Submitted Successfully!\n\nWarden: ${name}\nUnit: ${unitLabel}\nStatus: PENDING\n\nYour account is pending authorization by your ${unitLabel} Incharge.`);
-        
-        const emailInput = document.getElementById('warden-email');
-        if (emailInput) emailInput.value = email;
-
       } catch (err) {
-        alert('Error submitting warden application: ' + err.message);
+        console.error('Warden registration error:', err);
+        alert('Failed to submit application: ' + (err.message || err));
       }
     });
   }

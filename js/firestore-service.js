@@ -900,7 +900,34 @@ async function registerWardenAccount(
 
     isActive:
       isApproved
-  };
+  };  if (!firestore) {
+    let localWardens =
+      JSON.parse(
+        localStorage.getItem(
+          'klsvdit_wardens_cache'
+        ) || '[]'
+      );
+
+    localWardens =
+      localWardens.filter(
+        w =>
+          w.id !== docId &&
+          w.email !== payload.email
+      );
+
+    localWardens.push({
+      id: docId,
+      ...payload,
+      storage: 'local'
+    });
+
+    persistLocalJson(
+      'klsvdit_wardens_cache',
+      localWardens
+    );
+
+    return { id: docId, ...payload, storage: 'local' };
+  }
 
   try {
     await firestore
@@ -921,15 +948,6 @@ async function registerWardenAccount(
         }
       );
 
-  } catch (err) {
-    console.warn(
-      'Firestore register warden:',
-      err.code,
-      err.message
-    );
-  }
-
-  try {
     let localWardens =
       JSON.parse(
         localStorage.getItem(
@@ -946,20 +964,52 @@ async function registerWardenAccount(
 
     localWardens.push({
       id: docId,
-      ...payload
+      ...payload,
+      storage: 'firestore'
     });
 
-    localStorage.setItem(
+    persistLocalJson(
       'klsvdit_wardens_cache',
-      JSON.stringify(localWardens)
+      localWardens
     );
 
-  } catch (e) {}
+    return { id: docId, ...payload, storage: 'firestore' };
 
-  return {
-    id: docId,
-    ...payload
-  };
+  } catch (err) {
+    console.error(
+      '[WARDEN_REGISTRATION_FIRESTORE_ERROR]',
+      err && err.code,
+      err && err.message,
+      err
+    );
+
+    let localWardens =
+      JSON.parse(
+        localStorage.getItem(
+          'klsvdit_wardens_cache'
+        ) || '[]'
+      );
+
+    localWardens =
+      localWardens.filter(
+        w =>
+          w.id !== docId &&
+          w.email !== payload.email
+      );
+
+    localWardens.push({
+      id: docId,
+      ...payload,
+      storage: 'local'
+    });
+
+    persistLocalJson(
+      'klsvdit_wardens_cache',
+      localWardens
+    );
+
+    return { id: docId, ...payload, storage: 'local', error: err && err.message };
+  }
 }
 
 

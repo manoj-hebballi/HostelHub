@@ -340,7 +340,21 @@ service cloud.firestore {
         );
 
 
-      allow create: if isAuthenticated() && request.auth.uid == wardenId;
+      allow create: if (isAuthenticated() && request.auth.uid == wardenId) ||
+        (
+          request.resource.data.name != null &&
+          request.resource.data.name is string &&
+          request.resource.data.name.size() > 0 &&
+          request.resource.data.email != null &&
+          request.resource.data.email is string &&
+          request.resource.data.email.size() > 0 &&
+          (
+            request.resource.data.hostelUnit == 'boys' ||
+            request.resource.data.hostelUnit == 'girls1' ||
+            request.resource.data.hostelUnit == 'girls2'
+          ) &&
+          request.resource.data.status == 'pending'
+        );
 
 
       allow update: if isAuthenticated() &&
