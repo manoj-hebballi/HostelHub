@@ -647,7 +647,7 @@ async function getWardensByHostel(
     let snap = await firestore
       .collection('wardens')
       .where(
-        'hosteltype',
+        'hostelUnit',
         '==',
         targetType
       )
@@ -657,7 +657,7 @@ async function getWardensByHostel(
       snap = await firestore
         .collection('wardens')
         .where(
-          'hostelUnit',
+          'hostelType',
           '==',
           targetType
         )
@@ -668,7 +668,7 @@ async function getWardensByHostel(
       snap = await firestore
         .collection('wardens')
         .where(
-          'hostelType',
+          'hosteltype',
           '==',
           targetType
         )
