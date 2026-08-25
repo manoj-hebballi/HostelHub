@@ -608,42 +608,45 @@ async function getCurrentWarden() {
 }
 
 
-async function getWardensByHostel(
-  hostelType
-) {
-  const targetType =
-    normalizeHostelUnit(
-      hostelType || 'boys'
-    );
-
+async function getWardensByHostel(hostelType) {
+  const targetType = normalizeHostelUnit(hostelType || 'boys');
   let localCache = [];
-
   try {
-    const cached = JSON.parse(
-      localStorage.getItem(
-        'klsvdit_wardens_cache'
-      ) || '[]'
-    );
-
+    const cached = JSON.parse(localStorage.getItem('klsvdit_wardens_cache') || '[]');
     localCache = cached.filter(w => {
-      const unit = normalizeHostelUnit(
-        w.hostelUnit ||
-        w.hostelType ||
-        w.hosteltype ||
-        ''
-      );
-
+      const unit = normalizeHostelUnit(w.hostelUnit || w.hostelType || w.hosteltype || '');
       return unit === targetType || targetType === 'all';
     });
   } catch (e) {}
 
   const firestore = getDb();
+  const currentUser = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+  
+  const diagnostic = {
+    auth: {
+      isAuth: !!currentUser,
+      uid: currentUser ? currentUser.uid : null,
+      email: currentUser ? currentUser.email : null
+    },
+    targetType: targetType,
+    queriesRun: [],
+    firestoreDocsCount: 0,
+    firestoreDocIds: [],
+    firestoreError: null,
+    localCacheCount: localCache.length,
+    usedFallback: false
+  };
 
   if (!firestore) {
-    return localCache;
+    diagnostic.usedFallback = true;
+    diagnostic.firestoreError = 'Firestore SDK not initialized';
+    const fallbackRes = [...localCache];
+    fallbackRes._diagnostic = diagnostic;
+    return fallbackRes;
   }
 
   try {
+    diagnostic.queriesRun.push(`wardens.where('hostelUnit', '==', '${targetType}')`);
     let snap = await firestore
       .collection('wardens')
       .where(
@@ -654,6 +657,7 @@ async function getWardensByHostel(
       .get();
 
     if (snap.empty) {
+      diagnostic.queriesRun.push(`wardens.where('hostelType', '==', '${targetType}')`);
       snap = await firestore
         .collection('wardens')
         .where(
@@ -665,6 +669,7 @@ async function getWardensByHostel(
     }
 
     if (snap.empty) {
+      diagnostic.queriesRun.push(`wardens.where('hosteltype', '==', '${targetType}')`);
       snap = await firestore
         .collection('wardens')
         .where(
@@ -674,6 +679,26 @@ async function getWardensByHostel(
         )
         .get();
     }
+
+    if (snap.empty) {
+      diagnostic.queriesRun.push(`wardens.get() [ALL_DOCS_SCAN]`);
+      try {
+        const allSnap = await firestore.collection('wardens').get();
+        diagnostic.allDocsInCollection = allSnap.docs.map(d => ({
+          id: d.id,
+          hostelUnit: d.data().hostelUnit,
+          hostelType: d.data().hostelType,
+          hosteltype: d.data().hosteltype,
+          status: d.data().status,
+          email: d.data().email
+        }));
+      } catch (allErr) {
+        diagnostic.allDocsScanError = allErr.message;
+      }
+    }
+
+    diagnostic.firestoreDocsCount = snap.docs.length;
+    diagnostic.firestoreDocIds = snap.docs.map(d => d.id);
 
     const list = snap.docs.map(doc => {
       const data = doc.data();
@@ -694,20 +719,21 @@ async function getWardensByHostel(
     list.forEach(item => merged.set(item.id, item));
     localCache.forEach(item => merged.set(item.id, { ...merged.get(item.id), ...item }));
 
-    return Array.from(merged.values());
+    const result = Array.from(merged.values());
+    result._diagnostic = diagnostic;
+    return result;
 
   } catch (err) {
-    if (isFirestoreFallbackError(err)) {
-      return localCache;
-    }
+    diagnostic.usedFallback = true;
+    diagnostic.firestoreError = {
+      code: err && err.code ? err.code : 'unknown',
+      message: err && err.message ? err.message : String(err)
+    };
 
-    console.error(
-      'Warden fetch error:',
-      err.code,
-      err.message
-    );
-
-    return localCache;
+    console.error('[WARDEN_FETCH_DIAGNOSTIC_ERROR]', diagnostic);
+    const fallbackRes = [...localCache];
+    fallbackRes._diagnostic = diagnostic;
+    return fallbackRes;
   }
 }
 

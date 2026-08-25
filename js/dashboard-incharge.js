@@ -274,8 +274,30 @@ async function refreshWardensTable() {
       wardens = all.filter(w => (w.hostelUnit || w.hostelType || '').toLowerCase() === currentUnit);
     }
 
+    const diag = wardens && wardens._diagnostic;
+    console.log('[INCHARGE_WARDENS_RUNTIME_DIAGNOSTIC]', diag);
+
+    let diagRow = '';
+    if (diag) {
+      diagRow = `
+        <tr id="diagnosticRow">
+          <td colspan="7" style="background: #F8FAFC; border: 1px solid #CBD5E1; padding: 12px; font-family: monospace; font-size: 11px; color: #1E293B; line-height: 1.5;">
+            <strong>🔍 RUNTIME DIAGNOSTICS LOG:</strong><br>
+            • <strong>Firebase Auth:</strong> currentUser = ${diag.auth.isAuth ? '<span style="color:#059669; font-weight:bold;">AUTHENTICATED</span>' : '<span style="color:#DC2626; font-weight:bold;">NULL</span>'} | UID = <code>${diag.auth.uid || 'null'}</code> | Email = <code>${diag.auth.email || 'null'}</code><br>
+            • <strong>Incharge Session:</strong> currentUnit = <code>${currentUnit}</code> | targetType = <code>${diag.targetType}</code><br>
+            • <strong>Firestore Queries:</strong> ${diag.queriesRun.join(' ➔ ')}<br>
+            • <strong>Docs Returned:</strong> Count = <strong>${diag.firestoreDocsCount}</strong> | Doc IDs = [${diag.firestoreDocIds.join(', ')}]<br>
+            ${diag.allDocsInCollection ? `• <strong>All Wardens In Firestore Collection (${diag.allDocsInCollection.length}):</strong> ${JSON.stringify(diag.allDocsInCollection)}<br>` : ''}
+            • <strong>Firestore Status/Error:</strong> ${diag.firestoreError ? `<span style="color: #DC2626; font-weight: bold;">FAILED: ${diag.firestoreError.code || 'error'} — ${diag.firestoreError.message || diag.firestoreError}</span>` : '<span style="color: #059669; font-weight: bold;">SUCCESS (No Error)</span>'}<br>
+            • <strong>Local Cache Fallback:</strong> usedFallback = ${diag.usedFallback} | LocalStorage Item Count = ${diag.localCacheCount}
+          </td>
+        </tr>
+      `;
+    }
+
     if (!wardens || wardens.length === 0) {
       tbody.innerHTML = `
+        ${diagRow}
         <tr>
           <td colspan="7" class="empty-state">No wardens currently assigned to ${currentUnit.toUpperCase()}. Click "+ Register New Warden" to create one.</td>
         </tr>
