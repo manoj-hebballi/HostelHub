@@ -1053,22 +1053,63 @@ async function registerWardenAccount(
 }
 
 
+function waitForFirebaseAuthUser(timeoutMs = 6000) {
+  return new Promise((resolve, reject) => {
+    if (typeof firebase === 'undefined' || !firebase.auth) {
+      reject(new Error('Firebase Auth SDK is not initialized.'));
+      return;
+    }
+
+    const existingUser = firebase.auth().currentUser;
+    if (existingUser) {
+      resolve(existingUser);
+      return;
+    }
+
+    let timer = setTimeout(() => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+      reject(new Error('Firebase authentication session timed out. Please refresh and log in again.'));
+    }, timeoutMs);
+
+    let unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+      clearTimeout(timer);
+      if (typeof unsubscribe === 'function') unsubscribe();
+      if (user) {
+        resolve(user);
+      } else {
+        reject(new Error('Firebase authentication session is not available. Please log in again.'));
+      }
+    });
+  });
+}
+
 async function updateWardenApprovalStatus(
   wardenId,
   status,
   inchargeName = 'Incharge'
 ) {
   const firestore = getDb();
-  const currentUser = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
 
-  if (!currentUser) {
+  let currentUser = null;
+  try {
+    currentUser = await waitForFirebaseAuthUser();
+  } catch (authErr) {
+    console.error('[WARDEN_ACTION_AUTH_ERROR]', authErr.message);
     return {
       storage: 'local',
       success: false,
       errorCode: 'auth/unauthenticated',
-      error: 'Incharge session expired or not authenticated. Please refresh and log in again.'
+      error: authErr.message || 'Incharge session not authenticated. Please log in again.'
     };
   }
+
+  console.log('[WARDEN_ACTION_AUTH]', {
+    UID: currentUser ? currentUser.uid : 'NULL',
+    EMAIL: currentUser ? currentUser.email : 'NULL',
+    AUTHENTICATED: !!currentUser,
+    WARDEN_ID: wardenId,
+    ACTION: status
+  });
 
   const isApproved =
     status === 'approved' ||
@@ -1100,6 +1141,12 @@ async function updateWardenApprovalStatus(
       const cached = JSON.parse(localStorage.getItem('klsvdit_wardens_cache') || '[]');
       persistLocalJson('klsvdit_wardens_cache', cached.map(w => w.id === wardenId ? { ...w, ...payload, storage: 'firestore' } : w));
     } catch (e) {}
+
+    console.log('[WARDEN_ACTION_SUCCESS]', {
+      WARDEN_ID: wardenId,
+      ACTION: status,
+      STORAGE: 'firestore'
+    });
 
     return {
       storage: 'firestore',

@@ -327,16 +327,16 @@ async function refreshWardensTable() {
           <td>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
               ${status !== 'approved' ? `
-                <button type="button" class="btn btn-sm btn-primary" style="background: #10B981; border-color: #10B981; font-size: 11px; padding: 4px 8px;" onclick="handleWardenAction('${w.id}', 'approved')">
+                <button type="button" class="btn btn-sm btn-primary" style="background: #10B981; border-color: #10B981; font-size: 11px; padding: 4px 8px;" onclick="handleWardenAction('${w.id}', 'approved', this)">
                   Approve
                 </button>
               ` : `
-                <button type="button" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="handleWardenAction('${w.id}', 'deactivated')">
+                <button type="button" class="btn btn-sm btn-secondary" style="font-size: 11px; padding: 4px 8px;" onclick="handleWardenAction('${w.id}', 'deactivated', this)">
                   Deactivate
                 </button>
               `}
               ${status === 'pending' ? `
-                <button type="button" class="btn btn-sm btn-danger" style="font-size: 11px; padding: 4px 8px;" onclick="handleWardenAction('${w.id}', 'rejected')">
+                <button type="button" class="btn btn-sm btn-danger" style="font-size: 11px; padding: 4px 8px;" onclick="handleWardenAction('${w.id}', 'rejected', this)">
                   Reject
                 </button>
               ` : ''}
@@ -351,17 +351,12 @@ async function refreshWardensTable() {
   }
 }
 
-async function handleWardenAction(wardenId, targetStatus) {
-  const firebaseUser = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
-
-  console.log('WARDEN APPROVAL DIAGNOSTIC', {
-    UID: firebaseUser ? firebaseUser.uid : 'NULL',
-    InchargeEmail: firebaseUser ? firebaseUser.email : (currentIncharge ? currentIncharge.email : 'N/A'),
-    WardenDocumentID: wardenId,
-    TargetStatus: targetStatus,
-    CurrentUnit: currentUnit,
-    FirestorePath: `wardens/${wardenId}`
-  });
+async function handleWardenAction(wardenId, targetStatus, btnElement) {
+  const targetBtn = btnElement || (typeof event !== 'undefined' ? event.currentTarget : null);
+  if (targetBtn) {
+    targetBtn.disabled = true;
+    targetBtn.style.opacity = '0.6';
+  }
 
   try {
     let res = null;
@@ -369,10 +364,8 @@ async function handleWardenAction(wardenId, targetStatus) {
       res = await updateWardenApprovalStatus(wardenId, targetStatus, currentIncharge?.name || 'Incharge');
     }
 
-    console.log('WARDEN APPROVAL RESULT', res);
-
     if (res && res.storage === 'firestore' && res.success === true) {
-      alert(`Warden account status updated to ${targetStatus.toUpperCase()} successfully in Cloud Database!`);
+      alert(`Warden account status updated to ${targetStatus.toUpperCase()} successfully!`);
       await refreshWardensTable();
       await refreshStats();
     } else {
@@ -383,6 +376,11 @@ async function handleWardenAction(wardenId, targetStatus) {
   } catch (err) {
     console.error('Warden update exception:', err);
     alert(`Warden update failed.\n\nFirebase error: ${err.code || 'exception'}\n${err.message || err}\n\nThe cloud database was NOT changed.`);
+  } finally {
+    if (targetBtn) {
+      targetBtn.disabled = false;
+      targetBtn.style.opacity = '1';
+    }
   }
 }
 window.handleWardenAction = handleWardenAction;
