@@ -12,13 +12,23 @@ window.scrollToSection = function(sectionId) {
   }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   // Session Protection: Check for authenticated student session
   currentStudentSession = getStudentSession();
 
   if (!currentStudentSession) {
     window.location.replace('student-login.html');
     return;
+  }
+
+  if (typeof firebase !== 'undefined' && firebase.auth && !firebase.auth().currentUser) {
+    try {
+      await firebase.auth().signInAnonymously();
+    } catch (e) {
+      if (e && e.code !== 'auth/admin-restricted-operation') {
+        console.warn('Anonymous auth session note:', e.message || e);
+      }
+    }
   }
 
   if (typeof initBackButtonProtection === 'function') {
@@ -765,10 +775,10 @@ function setupAddComplaintModal(student) {
 
       try {
         const payload = {
-          studentId: student.id || student.usn,
-          studentName: student.name,
-          usn: (student.usn || '').toUpperCase(),
-          hostelType: (student.hostelType || 'boys').toLowerCase(),
+          studentId: student.id || student.usn || 'STUDENT',
+          studentName: student.name || student.studentName || 'Student',
+          usn: (student.usn || student.id || '').toString().toUpperCase(),
+          hostelType: (student.hostelType || student.hostelUnit || 'boys').toLowerCase(),
           roomNumber: student.roomNumber || 'Unassigned',
           category: category,
           title: title,
@@ -776,8 +786,12 @@ function setupAddComplaintModal(student) {
           photoUrl: photoDataUrl
         };
 
-        await addComplaint(payload);
-        showToast('Maintenance complaint submitted successfully!', 'success');
+        const res = await addComplaint(payload);
+        if (res && res.storage === 'local') {
+          showToast('Complaint saved locally (Offline Mode). Will sync when online.', 'info');
+        } else {
+          showToast('Maintenance complaint submitted successfully!', 'success');
+        }
         closeModal();
         await refreshStudentComplaints();
 

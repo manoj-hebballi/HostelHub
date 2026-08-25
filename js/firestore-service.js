@@ -1662,37 +1662,30 @@ async function getLeaveRequestsByStudent(
 
   try {
     const firestore = getDb();
+    const currentUid = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.uid : null;
 
-    let snap =
-      await firestore
-        .collection('leaveRequests')
-        .where(
-          'studentId',
-          '==',
-          studentIdentifier
-        )
-        .get();
-
-    if (snap.empty && studentUsn) {
-      snap =
-        await firestore
-          .collection('leaveRequests')
-          .where(
-            'usn',
-            '==',
-            usnStr
-          )
-          .get();
+    let snap = null;
+    if (currentUid && firestore) {
+      try {
+        snap = await firestore.collection('leaveRequests').where('studentAuthUid', '==', currentUid).get();
+      } catch (authSnapErr) {}
     }
 
-    const docs =
-      snap.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+    if ((!snap || snap.empty) && firestore) {
+      try {
+        snap = await firestore.collection('leaveRequests').where('studentId', '==', studentIdentifier).get();
+      } catch (stdIdErr) {}
+    }
 
-    if (docs.length) {
-      return docs;
+    if ((!snap || snap.empty) && studentUsn && firestore) {
+      try {
+        snap = await firestore.collection('leaveRequests').where('usn', '==', usnStr).get();
+      } catch (usnErr) {}
+    }
+
+    if (snap && !snap.empty) {
+      const docs = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      if (docs.length) return docs;
     }
 
   } catch (err) {
@@ -1709,6 +1702,7 @@ async function getLeaveRequestsByStudent(
 
 async function addLeaveRequest(data) {
   const firestore = getDb();
+  const currentAuthUid = (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.uid : '';
 
   const timePart =
     Date.now()
@@ -1739,6 +1733,8 @@ async function addLeaveRequest(data) {
     passToken: uniquePassToken,
 
     leaveRequestId: docId,
+
+    studentAuthUid: currentAuthUid || data.studentAuthUid || '',
 
     ...data,
 
@@ -1975,6 +1971,44 @@ async function getComplaintsByStudent(
       .toString()
       .toUpperCase();
 
+  const getFromCache = () => {
+    try {
+      const units = ['boys', 'girls1', 'girls2'];
+      let allCached = [];
+      units.forEach(u => {
+        const item = localStorage.getItem(`klsvdit_complaints_${u}`);
+        if (item) {
+          try {
+            const arr = JSON.parse(item);
+            if (Array.isArray(arr)) allCached = allCached.concat(arr);
+          } catch (e) {}
+        }
+      });
+      const globalItem = localStorage.getItem('klsvdit_complaints_cache');
+      if (globalItem) {
+        try {
+          const arr = JSON.parse(globalItem);
+          if (Array.isArray(arr)) allCached = allCached.concat(arr);
+        } catch (e) {}
+      }
+      const map = new Map();
+      allCached.forEach(c => {
+        if (c && c.id && !map.has(c.id)) map.set(c.id, c);
+      });
+      return Array.from(map.values()).filter(c =>
+        (c.usn || '').toString().toUpperCase() === usn ||
+        c.studentId === studentIdentifier ||
+        c.studentId === studentUsn
+      ).sort((a, b) => (b.createdAt?.seconds || b.createdAt || 0) - (a.createdAt?.seconds || a.createdAt || 0));
+    } catch (e) {
+      return [];
+    }
+  };
+
+  if (!firestore) {
+    return getFromCache();
+  }
+
   try {
     const snap =
       await firestore
@@ -1986,19 +2020,28 @@ async function getComplaintsByStudent(
         )
         .get();
 
-    return snap.docs.map(doc => ({
+    const docs = snap.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
 
+    return docs.sort((a, b) => {
+      const timeA = a.createdAt?.seconds || a.createdAt || 0;
+      const timeB = b.createdAt?.seconds || b.createdAt || 0;
+      return timeB - timeA;
+    });
+
   } catch (err) {
+    if (isFirestoreFallbackError(err)) {
+      return getFromCache();
+    }
     console.error(
       '[STUDENT_COMPLAINTS_ERROR]',
       err.code,
       err.message
     );
 
-    return [];
+    return getFromCache();
   }
 }
 
@@ -2052,21 +2095,23 @@ async function addComplaint(data) {
     const key = `klsvdit_complaints_${unit}`;
     const cached = JSON.parse(localStorage.getItem(key) || '[]');
     const complaintId = `complaint_${Date.now()}`;
-    persistLocalJson(key, [...cached, { id: complaintId, ...payload }]);
-    return { id: complaintId, ...payload };
+    persistLocalJson(key, [...cached, { id: complaintId, ...payload, storage: 'local' }]);
+    return { id: complaintId, ...payload, storage: 'local' };
   }
 
   try {
-    return await firestore
+    const docRef = await firestore
       .collection('complaints')
       .add(payload);
+    return { id: docRef.id, ...payload, storage: 'firestore' };
   } catch (err) {
+    console.error('[COMPLAINT_FIRESTORE_WRITE_ERROR]', err && err.code, err && err.message, err);
     if (isFirestoreFallbackError(err)) {
       const key = `klsvdit_complaints_${unit}`;
       const cached = JSON.parse(localStorage.getItem(key) || '[]');
       const complaintId = `complaint_${Date.now()}`;
-      persistLocalJson(key, [...cached, { id: complaintId, ...payload }]);
-      return { id: complaintId, ...payload };
+      persistLocalJson(key, [...cached, { id: complaintId, ...payload, storage: 'local' }]);
+      return { id: complaintId, ...payload, storage: 'local' };
     }
     throw err;
   }
@@ -2115,6 +2160,7 @@ async function updateComplaint(
   complaintId,
   data
 ) {
+  console.log('[COMPLAINT_UPDATE_ATTEMPT]', complaintId, data);
   const firestore = getDb();
   const payload = {
     ...data,
@@ -2136,16 +2182,9 @@ async function updateComplaint(
       .collection('complaints')
       .doc(complaintId)
       .update(payload);
+    console.log('[COMPLAINT_UPDATE_RESULT]', complaintId);
   } catch (err) {
-    if (isFirestoreFallbackError(err)) {
-      try {
-        const unit = normalizeHostelUnit(data.hostelUnit || data.hostelType || data.hosteltype || 'boys');
-        const key = `klsvdit_complaints_${unit}`;
-        const cached = JSON.parse(localStorage.getItem(key) || '[]');
-        persistLocalJson(key, cached.map(item => item.id === complaintId ? { ...item, ...payload } : item));
-      } catch (e) {}
-      return;
-    }
+    console.error('[COMPLAINT_UPDATE_ERROR]', err && err.code, err && err.message, err);
     throw err;
   }
 }
@@ -2991,7 +3030,7 @@ async function createGatePass(
   const firestore = getDb();
 
   const token =
-    generateSecurePassToken();
+    leaveRequest.passToken || generateSecurePassToken();
 
   const passId =
     `pass_${leaveRequest.id || Date.now()}`;
@@ -3111,41 +3150,59 @@ async function createGatePass(
 }
 
 
-async function getGatePassByToken(
-  tokenOrId
-) {
-  const clean =
-    (tokenOrId || '')
-      .trim()
-      .toUpperCase();
-
+async function getGatePassByToken(tokenOrId) {
+  const clean = (tokenOrId || '').trim();
   if (!clean) return null;
+  const cleanUpper = clean.toUpperCase();
+
+  const getFromCache = () => {
+    try {
+      const cached = JSON.parse(localStorage.getItem('klsvdit_gatepasses_cache') || '[]');
+      return cached.find(pass =>
+        (pass.id || '').toUpperCase() === cleanUpper ||
+        (pass.passToken || '').toUpperCase() === cleanUpper ||
+        (pass.leaveRequestId || '').toUpperCase() === cleanUpper
+      ) || null;
+    } catch (e) {
+      return null;
+    }
+  };
 
   try {
     const firestore = getDb();
+    if (!firestore) return getFromCache();
 
-    const direct =
-      await firestore
-        .collection('gatePasses')
-        .doc(clean)
-        .get();
-
-    if (direct.exists) {
-      return {
-        id: direct.id,
-        ...direct.data()
-      };
+    // 1. Direct document ID lookup
+    const directDoc = await firestore.collection('gatePasses').doc(clean).get();
+    if (directDoc.exists) {
+      return { id: directDoc.id, ...directDoc.data() };
     }
 
-  } catch (err) {
-    console.warn(
-      'Gate pass lookup:',
-      err.code,
-      err.message
-    );
-  }
+    // 2. Query gatePasses where passToken == clean or cleanUpper
+    let snap = await firestore.collection('gatePasses').where('passToken', '==', clean).limit(1).get();
+    if (snap.empty && clean !== cleanUpper) {
+      snap = await firestore.collection('gatePasses').where('passToken', '==', cleanUpper).limit(1).get();
+    }
 
-  return null;
+    // 3. Query gatePasses where leaveRequestId == clean
+    if (snap.empty) {
+      snap = await firestore.collection('gatePasses').where('leaveRequestId', '==', clean).limit(1).get();
+    }
+
+    if (!snap.empty) {
+      const doc = snap.docs[0];
+      return { id: doc.id, ...doc.data() };
+    }
+
+    // 4. Check LocalStorage cache fallback
+    return getFromCache();
+  } catch (err) {
+    if (isFirestoreFallbackError(err)) {
+      return getFromCache();
+    }
+    console.warn('Gate pass lookup note:', err.message || err);
+    return getFromCache();
+  }
 }
 
 

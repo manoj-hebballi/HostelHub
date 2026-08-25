@@ -348,7 +348,7 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
 
   // 3. UNREGISTERED STUDENT REJECTION
   if (!studentProfile) {
-    throw new Error('Please enter valid details or contact your Hostel Warden.');
+    throw new Error('USN not registered with Warden. Please contact your Hostel Warden.');
   }
 
   // 4. INACTIVE ACCOUNT REJECTION
@@ -359,25 +359,38 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
 
   // 5. COURSE MATCH CHECK
   const regCourse = studentProfile.course || studentProfile.branch || '';
-  if (regCourse && !isCourseMatch(inputCourse, regCourse)) {
-    throw new Error('Please enter valid details or contact your Hostel Warden.');
+  if (!regCourse || !isCourseMatch(inputCourse, regCourse)) {
+    throw new Error('Registration details mismatch: Course does not match registered details. Please contact your Warden.');
   }
 
   // 6. SEMESTER MATCH CHECK
   const regSem = studentProfile.semester || studentProfile.sem || '';
-  if (regSem && !isSemesterMatch(inputSemester, regSem)) {
-    throw new Error('Please enter valid details or contact your Hostel Warden.');
+  if (!regSem || !isSemesterMatch(inputSemester, regSem)) {
+    throw new Error('Registration details mismatch: Semester does not match registered details. Please contact your Warden.');
   }
 
   // 7. DATE OF BIRTH MATCH CHECK
   const regDob = studentProfile.dateOfBirth || studentProfile.dob || studentProfile.birthDate || '';
-  if (regDob && !isDobMatch(dobVal, regDob)) {
-    throw new Error('Please enter valid details or contact your Hostel Warden.');
+  if (!regDob || !isDobMatch(dobVal, regDob)) {
+    throw new Error('Registration details mismatch: Date of Birth does not match registered details. Please contact your Warden.');
   }
 
   const cleanUnit = (studentProfile.hostelUnit || studentProfile.hostelType || 'boys').toLowerCase();
   studentProfile.hostelType = cleanUnit;
   studentProfile.hostelUnit = cleanUnit;
+
+  if (typeof firebase !== 'undefined' && firebase.auth && !firebase.auth().currentUser) {
+    try {
+      const userCred = await firebase.auth().signInAnonymously();
+      if (userCred && userCred.user) {
+        studentProfile.authUid = userCred.user.uid;
+      }
+    } catch (e) {
+      if (e && e.code !== 'auth/admin-restricted-operation') {
+        console.warn('Student anonymous auth note:', e.message || e);
+      }
+    }
+  }
 
   setStudentSession(studentProfile);
   return studentProfile;
@@ -651,9 +664,15 @@ async function loginSecurity(email, password) {
   const firebaseAuth = getFirebaseAuth();
   if (!email || !password) throw new Error('Please enter both email and password.');
 
-  await firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
   const cleanEmail = email.trim().toLowerCase();
   const cleanPass = password.trim();
+
+  const ALLOWED_SECURITY_EMAIL = 'security@college.edu';
+  if (cleanEmail !== ALLOWED_SECURITY_EMAIL) {
+    throw new Error('Access Denied: Only the authorized Gate Security account (' + ALLOWED_SECURITY_EMAIL + ') is allowed to log in.');
+  }
+
+  await firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
   let userCredential;
   try {

@@ -634,8 +634,8 @@ async function processExitAction() {
     if (typeof recordGateScanActivity === 'function') {
       await recordGateScanActivity({
         studentId: activePass.studentId || '',
-        usn: activePass.usn || '2VD24CS049',
-        studentName: activePass.studentName || 'Manoj Hebballi',
+        usn: activePass.usn || '',
+        studentName: activePass.studentName || 'Student',
         hostelUnit: activePass.hostelUnit || 'boys',
         passId: activePass.id || '',
         passToken: activePass.passToken || activePass.id || '',
@@ -650,10 +650,10 @@ async function processExitAction() {
     if (typeof sendParentNotification === 'function') {
       await sendParentNotification({
         eventType: 'STUDENT_EXITED',
-        studentName: activePass.studentName || 'Manoj Hebballi',
-        usn: activePass.usn || '2VD24CS049',
+        studentName: activePass.studentName || 'Student',
+        usn: activePass.usn || '',
         hostelUnit: activePass.hostelUnit || 'boys',
-        parentContact: activePass.parentContact || '9876543211',
+        parentContact: activePass.parentContact || '',
         timestampStr
       });
     }
@@ -662,7 +662,7 @@ async function processExitAction() {
     activePass.exitTime = timestampStr;
     renderPassDetails(activePass);
 
-    alert(`EXIT MARKED SUCCESSFULLY!\n\nStudent: ${activePass.studentName || 'Manoj Hebballi'}\nExit Time: ${timestampStr}\nParent Notification Logged.`);
+    alert(`EXIT MARKED SUCCESSFULLY!\n\nStudent: ${activePass.studentName || 'Student'}\nExit Time: ${timestampStr}\nParent Notification Logged.`);
   } catch (err) {
     alert('Error marking exit: ' + err.message);
   }
@@ -687,7 +687,7 @@ async function processEntryAction() {
     try {
       if (isLate) {
         if (typeof updateMarketPassStatus === 'function') {
-          await updateMarketPassStatus(activePass.id, 'EXPIRED', { isLate: true, entryTime: null });
+          await updateMarketPassStatus(activePass.id, 'EXPIRED', { isLate: true, entryTime: timestampStr });
         }
         if (typeof sendWardenNotification === 'function') {
           await sendWardenNotification(activePass.hostelUnit || 'boys', 'LATE_RETURN', {
@@ -729,7 +729,7 @@ async function processEntryAction() {
       }
 
       activePass.status = isLate ? 'EXPIRED' : 'RETURNED';
-      activePass.entryTime = isLate ? null : timestampStr;
+      activePass.entryTime = timestampStr;
       activePass.isLate = isLate;
       renderMarketPassDetails(activePass);
 
@@ -751,9 +751,10 @@ async function processEntryAction() {
   }
 
   const timestampStr = new Date().toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'short' });
-  const now = new Date();
-  const curfewHour = 20;
-  const isLate = now.getHours() >= curfewHour;
+  const curfewTime = activePass.curfewTime || '20:00';
+  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+  const curfewMinutes = timeToMinutes(curfewTime);
+  const isLate = nowMinutes > curfewMinutes;
   const newStatus = isLate ? 'LATE_RETURN' : 'RETURNED';
 
   try {
@@ -768,8 +769,8 @@ async function processEntryAction() {
     if (typeof recordGateScanActivity === 'function') {
       await recordGateScanActivity({
         studentId: activePass.studentId || '',
-        usn: activePass.usn || '2VD24CS049',
-        studentName: activePass.studentName || 'Manoj Hebballi',
+        usn: activePass.usn || '',
+        studentName: activePass.studentName || 'Student',
         hostelUnit: activePass.hostelUnit || 'boys',
         passId: activePass.id || '',
         passToken: activePass.passToken || activePass.id || '',
@@ -784,10 +785,10 @@ async function processEntryAction() {
     if (typeof sendParentNotification === 'function') {
       await sendParentNotification({
         eventType: isLate ? 'STUDENT_LATE_RETURN' : 'STUDENT_ENTERED',
-        studentName: activePass.studentName || 'Manoj Hebballi',
-        usn: activePass.usn || '2VD24CS049',
+        studentName: activePass.studentName || 'Student',
+        usn: activePass.usn || '',
         hostelUnit: activePass.hostelUnit || 'boys',
-        parentContact: activePass.parentContact || '9876543211',
+        parentContact: activePass.parentContact || '',
         timestampStr
       });
     }

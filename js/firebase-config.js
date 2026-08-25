@@ -12,8 +12,9 @@ const firebaseConfig = {
   measurementId: "G-0LWD5DD78J"
 };
 
+
 /* ============================================
-   Firebase Initialization
+   Firebase Global Variables
    ============================================ */
 
 let app = null;
@@ -21,121 +22,139 @@ let auth = null;
 let db = null;
 let storage = null;
 
-/*
- * Wait until Firebase SDK is available.
- * This prevents firebase-config.js from running
- * before firebase-app/auth/firestore scripts load.
- */
+
+/* ============================================
+   Initialize Firebase
+   ============================================ */
 
 (function initializeHostelHubFirebase() {
 
   function initFirebase() {
 
+    /* -----------------------------------------
+       Check Firebase SDK
+       ----------------------------------------- */
+
     if (typeof firebase === "undefined") {
       console.error(
-        "HostelHub: Firebase SDK is not loaded. " +
-        "Check firebase SDK <script> URLs and internet connection."
+        "HostelHub: Firebase SDK is not loaded."
       );
       return false;
     }
 
+
+    /* -----------------------------------------
+       Check Firebase Configuration
+       ----------------------------------------- */
+
     if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-      console.error("HostelHub: Firebase configuration is missing.");
+      console.error(
+        "HostelHub: Firebase configuration is missing."
+      );
       return false;
     }
 
+
     try {
 
-      /* --------------------------------------------
-         Initialize Firebase App
-         -------------------------------------------- */
+      /* ---------------------------------------
+         Firebase App
+         --------------------------------------- */
 
       if (!firebase.apps || firebase.apps.length === 0) {
+
         app = firebase.initializeApp(firebaseConfig);
+
       } else {
+
         app = firebase.app();
+
       }
 
-      /* --------------------------------------------
+
+      /* ---------------------------------------
          Firebase Authentication
-         -------------------------------------------- */
+         --------------------------------------- */
 
       if (typeof firebase.auth === "function") {
+
         auth = firebase.auth();
+
       } else {
+
         console.error(
           "HostelHub: Firebase Auth SDK is not loaded."
         );
+
       }
 
-      /* --------------------------------------------
-         Cloud Firestore is initialized lazily only
-         after an authenticated user exists. Initializing
-         Firestore before sign-in triggers permission-denied
-         listens and noisy network aborts.
-         -------------------------------------------- */
 
-      if (typeof firebase.firestore !== "function") {
-        console.error(
-         "HostelHub: Firebase Firestore SDK is not loaded."
-        );
-      }
+      /* ---------------------------------------
+         Cloud Firestore
+         
+         IMPORTANT:
+         Initialize Firestore immediately.
+         Firestore initialization itself does NOT
+         require authentication or permission.
+         Permissions are checked only when data
+         is read/written.
+         --------------------------------------- */
 
-      /* --------------------------------------------
-         Firebase Storage
-         -------------------------------------------- */
+      if (typeof firebase.firestore === "function") {
 
-      if (typeof firebase.storage === "function") {
-        storage = firebase.storage();
-      }
-
-      /* --------------------------------------------
-         Final verification
-         -------------------------------------------- */
-
-      if (app && auth) {
-
-        console.log(
-          "HostelHub: Firebase initialized successfully."
-        );
-
-        console.log(
-          "HostelHub: Firebase Project:",
-          firebaseConfig.projectId
-        );
-
-        console.log(
-          "HostelHub: Firebase Auth ready."
-        );
-
-        if (typeof firebase.auth === "function") {
-          firebase.auth().onAuthStateChanged((user) => {
-            if (user && typeof firebase.firestore === "function") {
-              if (!db) {
-                db = firebase.firestore();
-              }
-            } else if (!user) {
-              db = null;
-            }
-          });
-        }
-
-        return true;
+        db = firebase.firestore();
 
       } else {
 
         console.error(
-          "HostelHub: Firebase initialization incomplete.",
-          {
-            app: !!app,
-            auth: !!auth,
-            db: !!db,
-            storage: !!storage
-          }
+          "HostelHub: Firebase Firestore SDK is not loaded."
         );
 
-        return false;
       }
+
+
+      /* ---------------------------------------
+         Firebase Storage
+         --------------------------------------- */
+
+      if (typeof firebase.storage === "function") {
+
+        storage = firebase.storage();
+
+      }
+
+
+      /* ---------------------------------------
+         Final Status
+         --------------------------------------- */
+
+      console.log(
+        "HostelHub: Firebase initialized successfully."
+      );
+
+      console.log(
+        "HostelHub: Firebase Project:",
+        firebaseConfig.projectId
+      );
+
+      console.log(
+        "HostelHub: Firebase Auth ready:",
+        !!auth
+      );
+
+      console.log(
+        "HostelHub: Firestore ready:",
+        !!db
+      );
+
+      console.log(
+        "HostelHub: Storage ready:",
+        !!storage
+      );
+
+
+      return !!app && !!auth && !!db;
+
 
     } catch (error) {
 
@@ -148,21 +167,16 @@ let storage = null;
     }
   }
 
-  /*
-   * Firebase SDK should normally already be loaded
-   * before this file executes.
-   */
+
+  /* ==========================================
+     Firebase SDK Loading
+     ========================================== */
 
   if (typeof firebase !== "undefined") {
 
     initFirebase();
 
   } else {
-
-    /*
-     * Give the SDK a short amount of time to load.
-     * This helps when script loading order is slightly delayed.
-     */
 
     let attempts = 0;
     const maxAttempts = 50;
@@ -174,6 +188,7 @@ let storage = null;
       if (typeof firebase !== "undefined") {
 
         clearInterval(waitForFirebase);
+
         initFirebase();
 
       } else if (attempts >= maxAttempts) {
@@ -181,7 +196,7 @@ let storage = null;
         clearInterval(waitForFirebase);
 
         console.error(
-          "HostelHub: Firebase SDK could not be loaded after waiting."
+          "HostelHub: Firebase SDK could not be loaded."
         );
 
       }
@@ -192,56 +207,75 @@ let storage = null;
 
 })();
 
+
 /* ============================================
    Global Firebase Access Helpers
    ============================================ */
 
 function getFirebaseApp() {
 
-  if (app) return app;
+  if (app) {
+    return app;
+  }
 
   if (
     typeof firebase !== "undefined" &&
     firebase.apps &&
     firebase.apps.length > 0
   ) {
+
     app = firebase.app();
+
     return app;
   }
 
-  throw new Error("HostelHub: Firebase App is not initialized.");
+  throw new Error(
+    "HostelHub: Firebase App is not initialized."
+  );
 }
 
 
 function getFirebaseAuth() {
 
-  if (auth) return auth;
+  if (auth) {
+    return auth;
+  }
 
   if (
     typeof firebase !== "undefined" &&
     typeof firebase.auth === "function"
   ) {
+
     auth = firebase.auth();
+
     return auth;
   }
 
-  throw new Error("HostelHub: Firebase Auth is not configured.");
+  throw new Error(
+    "HostelHub: Firebase Auth is not configured."
+  );
 }
 
 
 function getFirebaseDb() {
 
-  if (db) return db;
+  if (db) {
+    return db;
+  }
 
   if (
     typeof firebase !== "undefined" &&
     typeof firebase.firestore === "function"
   ) {
+
     db = firebase.firestore();
+
     return db;
   }
 
-  throw new Error("HostelHub: Firestore is not configured.");
+  throw new Error(
+    "HostelHub: Firestore is not configured."
+  );
 }
 
 
@@ -250,6 +284,7 @@ function getFirebaseDb() {
    ============================================ */
 
 window.hostelHubFirebase = {
+
   app: function () {
     return getFirebaseApp();
   },
@@ -263,18 +298,24 @@ window.hostelHubFirebase = {
   },
 
   storage: function () {
-    if (storage) return storage;
+
+    if (storage) {
+      return storage;
+    }
 
     if (
       typeof firebase !== "undefined" &&
       typeof firebase.storage === "function"
     ) {
+
       storage = firebase.storage();
+
       return storage;
     }
 
     return null;
   }
+
 };
 
 
@@ -299,17 +340,30 @@ window.addEventListener("load", function () {
 
     console.log(
       "Firebase App:",
-      app ? "READY" : "NOT READY"
+      app
+        ? "READY"
+        : "NOT READY"
     );
 
     console.log(
       "Firebase Auth:",
-      auth ? "READY" : "NOT READY"
+      auth
+        ? "READY"
+        : "NOT READY"
     );
 
     console.log(
       "Firestore:",
-      db ? "READY" : "NOT READY"
+      db
+        ? "READY"
+        : "NOT READY"
+    );
+
+    console.log(
+      "Firebase Storage:",
+      storage
+        ? "READY"
+        : "NOT READY"
     );
 
     console.log(

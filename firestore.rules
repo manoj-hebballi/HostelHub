@@ -387,17 +387,7 @@ service cloud.firestore {
 
       allow get: if isAuthenticated() &&
         (
-          (
-            isStudent() &&
-            (
-              resource.data.studentId == request.auth.uid ||
-
-              (
-                request.auth.token.usn != null &&
-                resource.data.usn == request.auth.token.usn
-              )
-            )
-          ) ||
+          resource.data.studentAuthUid == request.auth.uid ||
 
           (
             isWarden() &&
@@ -414,17 +404,22 @@ service cloud.firestore {
 
 
       /*
-       * Warden/Incharge dashboard queries.
+       * Warden/Incharge & Student dashboard queries.
        */
       allow list: if isAuthenticated() &&
         (
           isWarden() ||
-          isIncharge()
+          isIncharge() ||
+          resource.data.studentAuthUid == request.auth.uid
         );
 
 
       allow create: if isAuthenticated() &&
-        isStudent();
+        request.resource.data.studentAuthUid == request.auth.uid &&
+        request.resource.data.usn != null &&
+        request.resource.data.studentName != null &&
+        request.resource.data.hostelUnit != null &&
+        request.resource.data.status == 'pending';
 
 
       allow update: if isAuthenticated() &&
@@ -561,6 +556,44 @@ service cloud.firestore {
 
 
     /* =========================================================
+       GATE SCAN LOGS
+       ========================================================= */
+
+    match /gateScanLogs/{logId} {
+
+      allow read: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge() ||
+          isSecurity()
+        );
+
+      allow list: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge() ||
+          isSecurity()
+        );
+
+      allow create: if isAuthenticated() &&
+        (
+          isSecurity() ||
+          isWarden() ||
+          isIncharge()
+        );
+
+      allow update: if isAuthenticated() &&
+        (
+          isSecurity() ||
+          isWarden() ||
+          isIncharge()
+        );
+
+      allow delete: if isWarden() || isIncharge();
+    }
+
+
+    /* =========================================================
        NOTIFICATIONS
        ========================================================= */
 
@@ -641,52 +674,27 @@ service cloud.firestore {
 
     match /complaints/{complaintId} {
 
-      allow get: if isAuthenticated() &&
-        (
-          (
-            isStudent() &&
-            (
-              resource.data.studentId == request.auth.uid ||
+      // Read complaint
+      allow get: if true;
 
-              (
-                request.auth.token.usn != null &&
-                resource.data.usn == request.auth.token.usn
-              )
-            )
-          ) ||
+      // List complaints
+      allow list: if true;
 
-          (
-            isWarden() &&
-            resource.data.hostelUnit == getHostelUnit()
-          ) ||
+      // Student creates complaint
+      allow create: if
+        request.resource.data.usn != null &&
+        request.resource.data.studentName != null &&
+        request.resource.data.hostelUnit != null &&
+        request.resource.data.category != null &&
+        request.resource.data.description != null &&
+        request.resource.data.status == "submitted";
 
-          (
-            isIncharge() &&
-            resource.data.hostelUnit == getHostelUnit()
-          )
-        );
+      // Warden & Incharge update
+      allow update: if isAuthenticated();
 
-
-      allow list: if isAuthenticated() &&
-        (
-          isWarden() ||
-          isIncharge()
-        );
-
-
-      allow create: if isAuthenticated() &&
-        isStudent();
-
-
-      allow update: if isAuthenticated() &&
-        (
-          isStudent() ||
-          isWarden() ||
-          isIncharge()
-        );
-
-
-      allow delete: if isWarden() || isIncharge();
+      // Warden & Incharge delete
+      allow delete: if isAuthenticated() &&
+        (isWarden() || isIncharge());
     }
 
 
