@@ -1069,7 +1069,7 @@ async function updateWardenApprovalStatus(
       const cached = JSON.parse(localStorage.getItem('klsvdit_wardens_cache') || '[]');
       persistLocalJson('klsvdit_wardens_cache', cached.map(w => w.id === wardenId ? { ...w, ...payload } : w));
     } catch (e) {}
-    return;
+    return { storage: 'local', success: false, error: 'Firestore DB offline', errorCode: 'offline' };
   }
 
   try {
@@ -1077,15 +1077,37 @@ async function updateWardenApprovalStatus(
       .collection('wardens')
       .doc(wardenId)
       .set(payload, { merge: true });
+
+    try {
+      const cached = JSON.parse(localStorage.getItem('klsvdit_wardens_cache') || '[]');
+      persistLocalJson('klsvdit_wardens_cache', cached.map(w => w.id === wardenId ? { ...w, ...payload, storage: 'firestore' } : w));
+    } catch (e) {}
+
+    return {
+      storage: 'firestore',
+      success: true,
+      id: wardenId,
+      status: status
+    };
   } catch (err) {
-    if (isFirestoreFallbackError(err)) {
-      try {
-        const cached = JSON.parse(localStorage.getItem('klsvdit_wardens_cache') || '[]');
-        persistLocalJson('klsvdit_wardens_cache', cached.map(w => w.id === wardenId ? { ...w, ...payload } : w));
-      } catch (e) {}
-      return;
-    }
-    throw err;
+    console.error(
+      '[WARDEN_APPROVAL_FIRESTORE_ERROR]',
+      err && err.code,
+      err && err.message,
+      err
+    );
+
+    try {
+      const cached = JSON.parse(localStorage.getItem('klsvdit_wardens_cache') || '[]');
+      persistLocalJson('klsvdit_wardens_cache', cached.map(w => w.id === wardenId ? { ...w, ...payload, storage: 'local' } : w));
+    } catch (e) {}
+
+    return {
+      storage: 'local',
+      success: false,
+      errorCode: err && err.code ? err.code : 'unknown',
+      error: err && err.message ? err.message : String(err)
+    };
   }
 }
 

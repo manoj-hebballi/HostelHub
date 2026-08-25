@@ -352,15 +352,37 @@ async function refreshWardensTable() {
 }
 
 async function handleWardenAction(wardenId, targetStatus) {
+  const firebaseUser = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+
+  console.log('WARDEN APPROVAL DIAGNOSTIC', {
+    UID: firebaseUser ? firebaseUser.uid : 'NULL',
+    InchargeEmail: firebaseUser ? firebaseUser.email : (currentIncharge ? currentIncharge.email : 'N/A'),
+    WardenDocumentID: wardenId,
+    TargetStatus: targetStatus,
+    CurrentUnit: currentUnit,
+    FirestorePath: `wardens/${wardenId}`
+  });
+
   try {
+    let res = null;
     if (typeof updateWardenApprovalStatus === 'function') {
-      await updateWardenApprovalStatus(wardenId, targetStatus, currentIncharge?.name || 'Incharge');
+      res = await updateWardenApprovalStatus(wardenId, targetStatus, currentIncharge?.name || 'Incharge');
     }
-    alert(`Warden account status updated to ${targetStatus.toUpperCase()}.`);
-    await refreshWardensTable();
-    await refreshStats();
+
+    console.log('WARDEN APPROVAL RESULT', res);
+
+    if (res && res.storage === 'firestore' && res.success === true) {
+      alert(`Warden account status updated to ${targetStatus.toUpperCase()} successfully in Cloud Database!`);
+      await refreshWardensTable();
+      await refreshStats();
+    } else {
+      const errCode = res && res.errorCode ? res.errorCode : 'error';
+      const errMsg = res && res.error ? res.error : 'Permission denied or network failure';
+      alert(`Warden update failed.\n\nFirebase error: ${errCode}\n${errMsg}\n\nThe cloud database was NOT changed.`);
+    }
   } catch (err) {
-    alert('Could not update warden status: ' + err.message);
+    console.error('Warden update exception:', err);
+    alert(`Warden update failed.\n\nFirebase error: ${err.code || 'exception'}\n${err.message || err}\n\nThe cloud database was NOT changed.`);
   }
 }
 window.handleWardenAction = handleWardenAction;
