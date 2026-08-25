@@ -1059,6 +1059,16 @@ async function updateWardenApprovalStatus(
   inchargeName = 'Incharge'
 ) {
   const firestore = getDb();
+  const currentUser = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+
+  if (!currentUser) {
+    return {
+      storage: 'local',
+      success: false,
+      errorCode: 'auth/unauthenticated',
+      error: 'Incharge session expired or not authenticated. Please refresh and log in again.'
+    };
+  }
 
   const isApproved =
     status === 'approved' ||
