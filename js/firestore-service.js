@@ -1192,6 +1192,100 @@ async function updateWardenApprovalStatus(
   }
 }
 
+async function runWardenDiagnostic(wardenId, targetStatus = 'approved') {
+  console.log("=================================================");
+  console.log(" 🔍 BROWSER FIRESTORE WARDEN DIAGNOSTIC RUNNING  ");
+  console.log("=================================================");
+
+  // Step 1: Auth check
+  let currentUser = null;
+  try {
+    currentUser = await waitForFirebaseAuthUser(5000);
+    console.log('[WARDEN_DIAG_AUTH]', {
+      uid: currentUser ? currentUser.uid : 'NULL',
+      email: currentUser ? currentUser.email : 'NULL',
+      isAuth: !!currentUser
+    });
+  } catch (e) {
+    console.error('[WARDEN_DIAG_AUTH_FAIL]', e.message);
+    return { step: 'AUTH', pass: false, error: e.message };
+  }
+
+  const dbInstance = getDb();
+  const appOptions = (typeof firebase !== 'undefined' && firebase.app) ? firebase.app().options : {};
+
+  console.log('[WARDEN_FIRESTORE_INSTANCE]', {
+    projectId: appOptions ? appOptions.projectId : 'UNKNOWN',
+    appName: (typeof firebase !== 'undefined' && firebase.app) ? firebase.app().name : 'UNKNOWN',
+    dbType: dbInstance ? dbInstance.constructor?.name : 'NULL'
+  });
+
+  const ref = dbInstance.collection('wardens').doc(wardenId);
+
+  // Step 2: Browser READ test
+  let readPass = false;
+  try {
+    const snap = await ref.get();
+    readPass = snap.exists;
+    console.log('[WARDEN_BROWSER_READ]', {
+      pass: true,
+      exists: snap.exists,
+      id: snap.id,
+      data: snap.exists ? snap.data() : null
+    });
+  } catch (readErr) {
+    console.error('[WARDEN_BROWSER_READ_FAIL]', readErr.code, readErr.message);
+    return { step: 'READ', pass: false, errorCode: readErr.code, error: readErr.message };
+  }
+
+  // Step 3: Minimal UPDATE test
+  let minUpdatePass = false;
+  try {
+    await ref.update({ status: targetStatus });
+    minUpdatePass = true;
+    console.log('[WARDEN_MINIMAL_UPDATE]', { pass: true, status: targetStatus });
+  } catch (minErr) {
+    console.error('[WARDEN_MINIMAL_UPDATE_FAIL]', minErr.code, minErr.message);
+  }
+
+  // Step 4: Full UPDATE test
+  let fullUpdatePass = false;
+  try {
+    const isApproved = targetStatus === 'approved' || targetStatus === 'active';
+    await ref.set({
+      status: targetStatus,
+      isActive: isApproved,
+      approvedBy: 'Boys Hostel Incharge',
+      approvedAt: getFieldValue().serverTimestamp(),
+      updatedAt: getFieldValue().serverTimestamp()
+    }, { merge: true });
+    fullUpdatePass = true;
+    console.log('[WARDEN_FULL_UPDATE]', { pass: true, status: targetStatus });
+  } catch (fullErr) {
+    console.error('[WARDEN_FULL_UPDATE_FAIL]', fullErr.code, fullErr.message);
+  }
+
+  // Step 5: Final READ test
+  try {
+    const finalSnap = await ref.get();
+    console.log('[WARDEN_FINAL_READ]', {
+      pass: true,
+      status: finalSnap.exists ? finalSnap.data()?.status : null,
+      isActive: finalSnap.exists ? finalSnap.data()?.isActive : null
+    });
+  } catch (finalErr) {
+    console.error('[WARDEN_FINAL_READ_FAIL]', finalErr.code, finalErr.message);
+  }
+
+  return {
+    step: 'COMPLETE',
+    readPass,
+    minUpdatePass,
+    fullUpdatePass
+  };
+}
+window.runWardenDiagnostic = runWardenDiagnostic;
+
 
 /* ==========================================================
    SYSTEM OVERVIEW
