@@ -715,11 +715,16 @@ async function getWardensByHostel(hostelType) {
       };
     });
 
-    const merged = new Map();
-    list.forEach(item => merged.set(item.id, item));
-    localCache.forEach(item => merged.set(item.id, { ...merged.get(item.id), ...item }));
+    // Firestore is sole source of truth when connected
+    const result = [...list];
 
-    const result = Array.from(merged.values());
+    // Purge ghost local cache items that no longer exist in Cloud Firestore
+    try {
+      const cloudDocIds = new Set(list.map(d => d.id));
+      const validCache = localCache.filter(item => cloudDocIds.has(item.id));
+      localStorage.setItem('klsvdit_wardens_cache', JSON.stringify(validCache));
+    } catch (e) {}
+
     result._diagnostic = diagnostic;
     return result;
 
@@ -828,11 +833,14 @@ async function getAllWardens() {
       };
     });
 
-    const merged = new Map();
-    list.forEach(item => merged.set(item.id, item));
-    localCache.forEach(item => merged.set(item.id, { ...merged.get(item.id), ...item }));
+    // Firestore is sole source of truth when connected
+    try {
+      const cloudDocIds = new Set(list.map(d => d.id));
+      const validCache = localCache.filter(item => cloudDocIds.has(item.id));
+      localStorage.setItem('klsvdit_wardens_cache', JSON.stringify(validCache));
+    } catch (e) {}
 
-    return Array.from(merged.values());
+    return list;
   } catch (err) {
     if (isFirestoreFallbackError(err)) {
       return localCache;
