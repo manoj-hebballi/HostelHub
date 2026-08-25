@@ -103,7 +103,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (res && res.storage === 'firestore') {
             alert(`Application Submitted Successfully to Cloud!\n\nWarden: ${name}\nUnit: ${unitLabel}\nStatus: PENDING\n\nYour application is now visible to the ${unitLabel} Incharge.`);
           } else {
-            alert(`Application Saved Locally (Offline Mode).\n\nNote: Cloud submission failed (${res?.error || 'permission error'}). Will sync when online.`);
+            const codeStr = res && res.errorCode ? res.errorCode : 'error';
+            const msgStr = res && res.error ? res.error : 'Unknown cloud write error';
+            alert(`Application Saved Locally (Offline Mode).\n\nFirebase error: ${codeStr} — ${msgStr}\n\nWill sync when online.`);
           }
         } else {
           closeWardenModal();

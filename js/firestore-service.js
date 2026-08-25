@@ -1008,7 +1008,13 @@ async function registerWardenAccount(
       localWardens
     );
 
-    return { id: docId, ...payload, storage: 'local', error: err && err.message };
+    return {
+      id: docId,
+      ...payload,
+      storage: 'local',
+      error: err && err.message ? err.message : String(err),
+      errorCode: err && err.code ? err.code : 'unknown'
+    };
   }
 }
 
