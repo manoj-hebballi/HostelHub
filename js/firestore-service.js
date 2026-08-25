@@ -1111,6 +1111,20 @@ async function updateWardenApprovalStatus(
     ACTION: status
   });
 
+  const appOptions = (typeof firebase !== 'undefined' && firebase.app) ? firebase.app().options : {};
+
+  console.log('[WARDEN_FIREBASE_PROJECT]', {
+    projectId: appOptions ? appOptions.projectId : 'UNKNOWN',
+    authUid: currentUser ? currentUser.uid : 'NULL',
+    authEmail: currentUser ? currentUser.email : 'NULL'
+  });
+
+  console.log('[WARDEN_WRITE_PATH]', {
+    collection: 'wardens',
+    wardenId: wardenId,
+    path: `wardens/${wardenId}`
+  });
+
   const isApproved =
     status === 'approved' ||
     status === 'active';
@@ -1122,6 +1136,8 @@ async function updateWardenApprovalStatus(
     approvedAt: getFieldValue().serverTimestamp(),
     updatedAt: getFieldValue().serverTimestamp()
   };
+
+  console.log('[WARDEN_WRITE_PAYLOAD]', payload);
 
   if (!firestore) {
     try {
