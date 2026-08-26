@@ -24,13 +24,12 @@ function getFirebaseDb() {
     throw new Error('HostelHub: Firestore is not configured.');
   }
 
-  const currentUser = firebase.auth && firebase.auth().currentUser;
-  if (!currentUser) {
+  try {
+    db = firebase.firestore();
+    return db;
+  } catch (e) {
     return null;
   }
-
-  db = firebase.firestore();
-  return db;
 }
 
 /* ============================================
@@ -92,6 +91,12 @@ window.getWardenProfileByEmail = getWardenProfileByEmail;
 async function loginWarden(email, password) {
   const firebaseAuth = getFirebaseAuth();
 
+  console.log('[WARDEN_LOGIN_AUTH]', {
+    uid: (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.uid : null,
+    email: (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.email : null,
+    authenticated: !!(typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser)
+  });
+
   if (!email || !password) {
     throw new Error('Please enter both email and password.');
   }
@@ -122,7 +127,35 @@ async function loginWarden(email, password) {
     } catch (e) {}
   }
 
+  console.log('[WARDEN_LOGIN_LOOKUP]', {
+    lookupMethod: firestore ? 'firestore.collection("wardens").where("email", "==", cleanEmail)' : 'localCache',
+    collection: 'wardens',
+    emailBeingSearched: cleanEmail,
+    uidBeingSearched: (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.uid : null,
+    numberMatchingDocs: profile ? 1 : 0
+  });
+
+  if (profile) {
+    console.log('[WARDEN_LOGIN_DOCUMENT]', {
+      documentId: profile.id,
+      documentEmail: profile.email,
+      documentUid: profile.uid || profile.id,
+      role: profile.role,
+      status: profile.status,
+      isActive: profile.isActive,
+      hostelUnit: profile.hostelUnit || profile.hostelType,
+      approvedBy: profile.approvedBy,
+      approvedAt: profile.approvedAt
+    });
+  }
+
   if (!profile) {
+    console.log('[WARDEN_LOGIN_RESULT]', {
+      authSucceeded: false,
+      firestoreDocFound: false,
+      approvalCheckPassed: false,
+      reasonRejected: 'No warden account found for ' + cleanEmail
+    });
     throw new Error('No warden account found for ' + cleanEmail + '. Please submit a registration application or ask your Hostel Incharge to register your account.');
   }
 
@@ -131,12 +164,30 @@ async function loginWarden(email, password) {
   const hostelUnitName = (profile.hostelUnit || profile.hostelType || 'boys').toUpperCase();
 
   if (status === 'pending') {
+    console.log('[WARDEN_LOGIN_RESULT]', {
+      authSucceeded: false,
+      firestoreDocFound: true,
+      approvalCheckPassed: false,
+      reasonRejected: 'PENDING authorization'
+    });
     throw new Error(`Your Warden account registration is PENDING authorization by the ${hostelUnitName} Hostel Incharge. Please ask your Incharge to approve your account.`);
   }
   if (status === 'rejected') {
+    console.log('[WARDEN_LOGIN_RESULT]', {
+      authSucceeded: false,
+      firestoreDocFound: true,
+      approvalCheckPassed: false,
+      reasonRejected: 'REJECTED by Incharge'
+    });
     throw new Error(`Your Warden account registration was REJECTED by the ${hostelUnitName} Hostel Incharge.`);
   }
   if (status === 'deactivated' || (status === 'approved' && profile.isActive === false)) {
+    console.log('[WARDEN_LOGIN_RESULT]', {
+      authSucceeded: false,
+      firestoreDocFound: true,
+      approvalCheckPassed: false,
+      reasonRejected: 'DEACTIVATED by Incharge'
+    });
     throw new Error(`Your Warden account is currently DEACTIVATED by the ${hostelUnitName} Hostel Incharge.`);
   }
 
