@@ -398,8 +398,23 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
       }
 
       if (!snapshot.empty) {
-        const data = snapshot.docs[0].data();
-        studentProfile = { id: snapshot.docs[0].id, ...data };
+        const targetDoc = snapshot.docs[0];
+        const data = targetDoc.data();
+        studentProfile = { id: targetDoc.id, ...data };
+
+        // Save authUid to the student document in Cloud Firestore
+        if (currentAuthUser && currentAuthUser.uid) {
+          try {
+            await firestore.collection('students').doc(targetDoc.id).set({
+              authUid: currentAuthUser.uid,
+              email: studentAuthEmail,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }, { merge: true });
+            studentProfile.authUid = currentAuthUser.uid;
+          } catch (syncErr) {
+            console.warn('Student authUid sync note:', syncErr.message);
+          }
+        }
       }
     } catch (err) {
       console.warn('Firestore student lookup note:', err.message);

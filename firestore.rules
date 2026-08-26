@@ -286,6 +286,13 @@ service cloud.firestore {
           request.auth.uid == studentId ||
 
           (
+            resource != null &&
+            resource.data.authUid != null &&
+            resource.data.authUid == request.auth.uid
+          ) ||
+
+          (
+            resource != null &&
             resource.data.email != null &&
             request.auth.token.email != null &&
             resource.data.email == request.auth.token.email
@@ -293,11 +300,13 @@ service cloud.firestore {
 
           (
             isWarden() &&
+            resource != null &&
             resource.data.hostelUnit == getHostelUnit()
           ) ||
 
           (
             isIncharge() &&
+            resource != null &&
             resource.data.hostelUnit == getHostelUnit()
           )
         );
@@ -323,6 +332,7 @@ service cloud.firestore {
       allow update: if isAuthenticated() &&
         (
           request.auth.uid == studentId ||
+          (resource != null && resource.data.authUid != null && resource.data.authUid == request.auth.uid) ||
           isWarden() ||
           isIncharge()
         );
