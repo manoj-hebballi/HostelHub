@@ -736,6 +736,13 @@ async function getWardensByHostel(hostelType) {
     };
 
     console.error('[WARDEN_FETCH_DIAGNOSTIC_ERROR]', diagnostic);
+    console.error('[WARDEN_FETCH_EXACT_ERROR]', {
+      code: err && err.code,
+      message: err && err.message,
+      name: err && err.name,
+      targetType,
+      query: `wardens.where('hostelUnit', '==', '${targetType}')`
+    });
     const fallbackRes = [...localCache];
     fallbackRes._diagnostic = diagnostic;
     return fallbackRes;
@@ -989,6 +996,46 @@ async function registerWardenAccount(
   }
 
   try {
+    console.log(
+      '[WARDEN_REGISTRATION_PAYLOAD_JSON]',
+      JSON.stringify(createPayload, null, 2)
+    );
+
+    console.log(
+      '[WARDEN_REGISTRATION_AUTH_JSON]',
+      JSON.stringify({
+        uid: (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser?.uid || null : null,
+        email: (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser?.email || null : null,
+        authenticated: !!(typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser)
+      }, null, 2)
+    );
+
+    console.log('[WARDEN_CREATE_RULE_FIELDS]', {
+      name: {
+        value: createPayload.name,
+        type: typeof createPayload.name
+      },
+      email: {
+        value: createPayload.email,
+        type: typeof createPayload.email
+      },
+      hostelUnit: {
+        value: createPayload.hostelUnit,
+        type: typeof createPayload.hostelUnit
+      },
+      status: {
+        value: createPayload.status,
+        type: typeof createPayload.status
+      },
+      hasName: createPayload.name != null,
+      hasEmail: createPayload.email != null,
+      validHostelUnit:
+        createPayload.hostelUnit === 'boys' ||
+        createPayload.hostelUnit === 'girls1' ||
+        createPayload.hostelUnit === 'girls2',
+      statusPending: createPayload.status === 'pending'
+    });
+
     console.log('[WARDEN_REGISTRATION_BEFORE_SET]', {
       path: `wardens/${docId}`,
       payload: createPayload
