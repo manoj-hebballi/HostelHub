@@ -364,17 +364,24 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
     try {
       userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, canonicalDobPass);
     } catch (err) {
-      if (err.code === 'auth/user-not-found') {
+      console.error('[STUDENT_AUTH_SIGNIN_ERROR]', {
+        code: err?.code,
+        message: err?.message,
+        usn: normalizedUsn,
+        email: studentAuthEmail
+      });
+
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
         try {
           userCredential = await firebaseAuth.createUserWithEmailAndPassword(studentAuthEmail, canonicalDobPass);
         } catch (createErr) {
-          console.warn('Student Auth creation note:', createErr.message);
-        }
-      } else if (err.code === 'auth/invalid-credential') {
-        // invalid-credential in SDK 10+ can mean user not found OR wrong password
-        try {
-          userCredential = await firebaseAuth.createUserWithEmailAndPassword(studentAuthEmail, canonicalDobPass);
-        } catch (createErr) {
+          console.error('[STUDENT_AUTH_SIGNUP_ERROR]', {
+            code: createErr?.code,
+            message: createErr?.message,
+            usn: normalizedUsn,
+            email: studentAuthEmail
+          });
+
           if (createErr.code === 'auth/email-already-in-use') {
             throw new Error('Registration details mismatch: Incorrect Date of Birth. Please check your Date of Birth.');
           }
