@@ -188,8 +188,13 @@ async function getStudentByUsn(usn) {
 
 async function getStudentsByHostel(hostelType) {
   const targetType = normalizeHostelUnit(hostelType || 'boys');
-  let localCache = [];
 
+  console.log('[WARDEN_STUDENTS_LOAD_START]', {
+    requestedHostel: hostelType,
+    targetType
+  });
+
+  let localCache = [];
   try {
     const cached = JSON.parse(localStorage.getItem('klsvdit_students_cache') || '[]');
     localCache = cached.filter(student => {
@@ -201,6 +206,7 @@ async function getStudentsByHostel(hostelType) {
   try {
     const firestore = getDb();
     if (!firestore) {
+      console.log('[WARDEN_STUDENTS_FIRESTORE_RESULT]', { firestoreAvailable: false, count: localCache.length });
       return localCache.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
 
@@ -237,12 +243,20 @@ async function getStudentsByHostel(hostelType) {
       });
     } catch (e) {}
 
-    // If Cloud Firestore returned data, use it as authoritative source
-    if (mergedMap.size > 0) {
-      return Array.from(mergedMap.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    const firestoreList = Array.from(mergedMap.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    console.log('[WARDEN_STUDENTS_FIRESTORE_RESULT]', {
+      firestoreAvailable: true,
+      count: firestoreList.length
+    });
+
+    console.log('[WARDEN_STUDENTS_COUNT]', firestoreList.length);
+    console.log('[WARDEN_STUDENTS_USNS]', firestoreList.map(s => s.usn));
+
+    if (firestoreList.length > 0) {
+      return firestoreList;
     }
 
-    // Fallback to localCache if Cloud Firestore returned no documents
     return localCache.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   } catch (err) {
@@ -256,163 +270,112 @@ async function getStudentsByHostel(hostelType) {
 
 async function addStudent(data, wardenHostelType) {
   const firestore = getDb();
-
-  const normalizedUsn = (
-    data.usn || ''
-  )
-    .trim()
-    .toUpperCase();
+  const normalizedUsn = (data.usn || '').trim().toUpperCase();
 
   if (!normalizedUsn) {
     throw new Error('USN is required.');
   }
 
   if (!data.name) {
-    throw new Error(
-      'Student name is required.'
-    );
+    throw new Error('Student name is required.');
   }
 
   const unit = normalizeHostelUnit(
-    wardenHostelType ||
-    data.hostelUnit ||
-    data.hostelType ||
-    data.hosteltype ||
-    'boys'
+    wardenHostelType || data.hostelUnit || data.hostelType || data.hosteltype || 'boys'
   );
+
+  console.log('[STUDENT_REGISTER_START]', {
+    usn: normalizedUsn,
+    name: data.name,
+    hostelUnit: unit
+  });
+
+  if (!firestore) {
+    throw new Error('Cloud Firestore is not initialized. Cannot register student.');
+  }
 
   const studentPayload = {
     name: data.name.trim(),
-
     usn: normalizedUsn,
-
-    course: (
-      data.course || 'B.E.'
-    )
-      .trim()
-      .toUpperCase(),
-
-    semester: (
-      data.semester || '5'
-    )
-      .toString()
-      .trim(),
-
-    dateOfBirth: (
-      data.dateOfBirth ||
-      data.dob ||
-      ''
-    )
-      .trim(),
-
-    dob: (
-      data.dateOfBirth ||
-      data.dob ||
-      ''
-    )
-      .trim(),
-
-    roomNumber: (
-      data.roomNumber || '101'
-    )
-      .trim(),
-
-    studentPhone: (
-      data.studentPhone || ''
-    )
-      .trim(),
-
-    parentPhone: (
-      data.parentPhone || ''
-    )
-      .trim(),
-
+    course: (data.course || 'BE').trim().toUpperCase(),
+    branch: (data.course || 'BE').trim().toUpperCase(),
+    semester: (data.semester || '5').toString().trim(),
+    sem: (data.semester || '5').toString().trim(),
+    dateOfBirth: (data.dateOfBirth || data.dob || '').trim(),
+    dob: (data.dateOfBirth || data.dob || '').trim(),
+    roomNumber: (data.roomNumber || '101').trim(),
+    studentPhone: (data.studentPhone || '').trim(),
+    parentPhone: (data.parentPhone || '').trim(),
     hostelUnit: unit,
     hostelType: unit,
-
+    hosteltype: unit,
     status: 'active',
-
-    updatedAt:
-      getFieldValue().serverTimestamp()
+    isActive: true,
+    updatedAt: getFieldValue().serverTimestamp()
   };
 
-  let docId =
-    `student_${normalizedUsn.toLowerCase()}`;
+  let docId = `student_${normalizedUsn.toLowerCase()}`;
 
+  console.log('[STUDENT_REGISTER_FIRESTORE_WRITE]', {
+    docId,
+    path: `students/${docId}`,
+    usn: normalizedUsn,
+    unit
+  });
+
+  // 1. Execute Firestore Write
   try {
-    if (!firestore) {
-      throw new Error('Firestore unavailable; using local cache mode.');
-    }
-
-    const existing = await firestore
-      .collection('students')
-      .where(
-        'usn',
-        '==',
-        normalizedUsn
-      )
-      .get();
-
+    const existing = await firestore.collection('students').where('usn', '==', normalizedUsn).get();
     if (!existing.empty) {
       docId = existing.docs[0].id;
-
-      await firestore
-        .collection('students')
-        .doc(docId)
-        .update(studentPayload);
-
+      await firestore.collection('students').doc(docId).set(studentPayload, { merge: true });
     } else {
-      const docRef = await firestore
-        .collection('students')
-        .add({
-          ...studentPayload,
-
-          createdAt:
-            getFieldValue().serverTimestamp()
-        });
-
-      docId = docRef.id;
+      await firestore.collection('students').doc(docId).set({
+        ...studentPayload,
+        createdAt: getFieldValue().serverTimestamp()
+      });
     }
-
   } catch (err) {
-    if (isFirestoreFallbackError(err)) {
-      console.warn('Firestore student write fallback enabled:', err.message || err.code);
-    } else {
-      console.warn(
-        'Firestore student write:',
-        err.code,
-        err.message
-      );
-    }
+    console.error('[STUDENT_REGISTER_WRITE_FAILED]', {
+      code: err.code,
+      message: err.message,
+      usn: normalizedUsn
+    });
+    throw new Error(`Failed to write student record to Cloud Firestore: ${err.message || err.code}`);
   }
 
+  // 2. Read Back & Verify Document Existence
+  console.log('[STUDENT_REGISTER_VERIFY]', {
+    docId,
+    path: `students/${docId}`
+  });
+
+  const verifySnap = await firestore.collection('students').doc(docId).get();
+  if (!verifySnap.exists) {
+    console.error('[STUDENT_REGISTER_VERIFY_FAILED]', { docId, usn: normalizedUsn });
+    throw new Error(`Cloud Firestore read-back verification failed: Document students/${docId} was not found after write.`);
+  }
+
+  const verifiedData = verifySnap.data();
+
+  console.log('[STUDENT_REGISTER_RESULT]', {
+    success: true,
+    docId,
+    usn: verifiedData.usn,
+    hostelUnit: verifiedData.hostelUnit
+  });
+
+  // 3. Update local cache ONLY AFTER Firestore write & verification succeed
   try {
-    let cached = JSON.parse(
-      localStorage.getItem(
-        'klsvdit_students_cache'
-      ) || '[]'
-    );
-
-    cached = cached.filter(
-      s =>
-        (s.usn || '').toUpperCase() !==
-        normalizedUsn
-    );
-
-    cached.push({
-      id: docId,
-      ...studentPayload
-    });
-
-    persistLocalJson(
-      'klsvdit_students_cache',
-      cached
-    );
-
+    let cached = JSON.parse(localStorage.getItem('klsvdit_students_cache') || '[]');
+    cached = cached.filter(s => (s.usn || '').toUpperCase() !== normalizedUsn);
+    cached.push({ id: docId, ...studentPayload });
+    persistLocalJson('klsvdit_students_cache', cached);
   } catch (e) {}
 
   return {
     id: docId,
+    storage: 'firestore',
     ...studentPayload
   };
 }
