@@ -105,6 +105,14 @@ service cloud.firestore {
         : request.auth.token.role != null
           ? request.auth.token.role
 
+        : request.auth.token.email != null &&
+          (
+            request.auth.token.email == 'incharge.boys@klsvdit.ac.in' ||
+            request.auth.token.email == 'incharge.girls1@klsvdit.ac.in' ||
+            request.auth.token.email == 'incharge.girls2@klsvdit.ac.in'
+          )
+          ? 'incharge'
+
         : hasInchargeDoc()
           ? 'incharge'
 
@@ -143,9 +151,6 @@ service cloud.firestore {
     function isIncharge() {
       return isAuthenticated() &&
         (
-          getRole() == 'incharge' ||
-          getRole() == 'Incharge' ||
-          getRole() == 'inCharge' ||
           (
             request.auth.token.email != null &&
             (
@@ -153,7 +158,10 @@ service cloud.firestore {
               request.auth.token.email == 'incharge.girls1@klsvdit.ac.in' ||
               request.auth.token.email == 'incharge.girls2@klsvdit.ac.in'
             )
-          )
+          ) ||
+          getRole() == 'incharge' ||
+          getRole() == 'Incharge' ||
+          getRole() == 'inCharge'
         );
     }
 
