@@ -91,20 +91,7 @@ window.getWardenProfileByEmail = getWardenProfileByEmail;
 async function loginWarden(email, password) {
   const firebaseAuth = getFirebaseAuth();
 
-  console.log('[MOBILE_FIREBASE_INIT]', {
-    firebaseAvailable: typeof firebase !== 'undefined',
-    appsLength: (typeof firebase !== 'undefined' && firebase.apps) ? firebase.apps.length : 0,
-    projectId: (typeof firebase !== 'undefined' && firebase.app) ? firebase.app().options.projectId : 'NONE',
-    firestoreInitialized: !!(typeof firebase !== 'undefined' && firebase.firestore),
-    authInitialized: !!(typeof firebase !== 'undefined' && firebase.auth)
-  });
-
-  console.log('[MOBILE_SCRIPT_VERSION]', {
-    authServiceLoadedUrl: document.querySelector('script[src*="auth-service.js"]')?.src || 'UNKNOWN',
-    wardenLoginLoadedUrl: window.location.href
-  });
-
-  console.log('[WARDEN_LOGIN_AUTH]', {
+  console.log('[WARDEN_LOGIN_AUTH_START]', {
     uid: (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.uid : null,
     email: (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.email : null,
     authenticated: !!(typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser)
@@ -118,143 +105,7 @@ async function loginWarden(email, password) {
   const cleanEmail = email.trim().toLowerCase();
   const cleanPass = password.trim();
 
-  console.log('[MOBILE_LOGIN_INPUT]', {
-    normalizedEmail: cleanEmail
-  });
-
-  // 1. Look up Firestore wardens collection by email or local cache
-  let profile = null;
-  const firestore = getFirebaseDb();
-
-  if (firestore) {
-    try {
-      const snap = await firestore.collection('wardens').where('email', '==', cleanEmail).limit(1).get();
-      if (!snap.empty) {
-        profile = { id: snap.docs[0].id, ...snap.docs[0].data() };
-      }
-    } catch (e) {
-      console.warn('Firestore warden email lookup note:', e.message);
-    }
-  }
-
-  if (!profile) {
-    try {
-      const cached = JSON.parse(localStorage.getItem('klsvdit_wardens_cache') || '[]');
-      profile = cached.find(w => (w.email || '').toLowerCase() === cleanEmail);
-    } catch (e) {}
-  }
-
-  console.log('[WARDEN_LOGIN_LOOKUP]', {
-    lookupMethod: firestore ? 'firestore.collection("wardens").where("email", "==", cleanEmail)' : 'localCache',
-    collection: 'wardens',
-    emailBeingSearched: cleanEmail,
-    uidBeingSearched: (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.uid : null,
-    numberMatchingDocs: profile ? 1 : 0
-  });
-
-  console.log('[MOBILE_WARDEN_LOOKUP]', {
-    queryUsed: firestore ? 'firestore.collection("wardens").where("email", "==", cleanEmail).limit(1)' : 'localStorage:klsvdit_wardens_cache',
-    normalizedEmail: cleanEmail,
-    numberMatchingDocs: profile ? 1 : 0,
-    documentId: profile ? profile.id : null
-  });
-
-  if (profile) {
-    console.log('[WARDEN_LOGIN_DOCUMENT]', {
-      documentId: profile.id,
-      documentEmail: profile.email,
-      documentUid: profile.uid || profile.id,
-      role: profile.role,
-      status: profile.status,
-      isActive: profile.isActive,
-      hostelUnit: profile.hostelUnit || profile.hostelType,
-      approvedBy: profile.approvedBy,
-      approvedAt: profile.approvedAt
-    });
-
-    console.log('[MOBILE_WARDEN_DOCUMENT]', {
-      email: profile.email,
-      role: profile.role,
-      status: profile.status,
-      isActive: profile.isActive,
-      hostelUnit: profile.hostelUnit || profile.hostelType,
-      approvedBy: profile.approvedBy,
-      approvedAt: profile.approvedAt,
-      uidField: profile.uid || profile.id
-    });
-  }
-
-  if (!profile) {
-    console.log('[WARDEN_LOGIN_RESULT]', {
-      authSucceeded: false,
-      firestoreDocFound: false,
-      approvalCheckPassed: false,
-      reasonRejected: 'No warden account found for ' + cleanEmail
-    });
-    console.log('[MOBILE_WARDEN_LOGIN_RESULT]', {
-      firestoreFound: false,
-      approved: false,
-      active: false,
-      authSucceeded: false,
-      finalRejectionReason: 'No warden account found for ' + cleanEmail
-    });
-    throw new Error('No warden account found for ' + cleanEmail + '. Please submit a registration application or ask your Hostel Incharge to register your account.');
-  }
-
-  // 2. Check Authorization Status BEFORE Firebase Auth sign-in
-  const status = (profile.status || 'approved').toLowerCase();
-  const hostelUnitName = (profile.hostelUnit || profile.hostelType || 'boys').toUpperCase();
-
-  if (status === 'pending') {
-    console.log('[WARDEN_LOGIN_RESULT]', {
-      authSucceeded: false,
-      firestoreDocFound: true,
-      approvalCheckPassed: false,
-      reasonRejected: 'PENDING authorization'
-    });
-    console.log('[MOBILE_WARDEN_LOGIN_RESULT]', {
-      firestoreFound: true,
-      approved: false,
-      active: profile.isActive !== false,
-      authSucceeded: false,
-      finalRejectionReason: 'PENDING authorization'
-    });
-    throw new Error(`Your Warden account registration is PENDING authorization by the ${hostelUnitName} Hostel Incharge. Please ask your Incharge to approve your account.`);
-  }
-  if (status === 'rejected') {
-    console.log('[WARDEN_LOGIN_RESULT]', {
-      authSucceeded: false,
-      firestoreDocFound: true,
-      approvalCheckPassed: false,
-      reasonRejected: 'REJECTED by Incharge'
-    });
-    console.log('[MOBILE_WARDEN_LOGIN_RESULT]', {
-      firestoreFound: true,
-      approved: false,
-      active: profile.isActive !== false,
-      authSucceeded: false,
-      finalRejectionReason: 'REJECTED by Incharge'
-    });
-    throw new Error(`Your Warden account registration was REJECTED by the ${hostelUnitName} Hostel Incharge.`);
-  }
-  if (status === 'deactivated' || (status === 'approved' && profile.isActive === false)) {
-    console.log('[WARDEN_LOGIN_RESULT]', {
-      authSucceeded: false,
-      firestoreDocFound: true,
-      approvalCheckPassed: false,
-      reasonRejected: 'DEACTIVATED by Incharge'
-    });
-    console.log('[MOBILE_WARDEN_LOGIN_RESULT]', {
-      firestoreFound: true,
-      approved: true,
-      active: false,
-      authSucceeded: false,
-      finalRejectionReason: 'DEACTIVATED by Incharge'
-    });
-    throw new Error(`Your Warden account is currently DEACTIVATED by the ${hostelUnitName} Hostel Incharge.`);
-  }
-
-  // 3. Attempt Firebase Auth sign-in with auto-creation fallback for approved accounts
+  // 1. Authenticate with Firebase Auth FIRST so request.auth is established for Firestore Security Rules
   let userCredential = null;
   let authError = null;
 
@@ -280,21 +131,65 @@ async function loginWarden(email, password) {
     }
   }
 
-  console.log('[MOBILE_AUTH_RESULT]', {
-    authSucceeded: !!userCredential,
-    errorCode: authError ? authError.code : 'NONE',
-    errorMessage: authError ? authError.message : 'NONE',
-    currentUserUid: (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.uid : null,
-    currentUserEmail: (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) ? firebase.auth().currentUser.email : null
+  const authUser = userCredential?.user;
+  const authUid = authUser ? authUser.uid : null;
+
+  console.log('[WARDEN_LOGIN_AUTH_SUCCESS]', {
+    authUid,
+    email: cleanEmail
   });
 
-  console.log('[MOBILE_WARDEN_LOGIN_RESULT]', {
-    firestoreFound: true,
-    approved: true,
-    active: true,
-    authSucceeded: !!userCredential,
-    finalRejectionReason: 'NONE'
-  });
+  // 2. Query Cloud Firestore AFTER Firebase Auth sign-in
+  let profile = null;
+  const firestore = getFirebaseDb();
+
+  if (firestore) {
+    try {
+      if (authUid) {
+        const uidSnap = await firestore.collection('wardens').doc(authUid).get();
+        if (uidSnap.exists) {
+          profile = { id: uidSnap.id, ...uidSnap.data() };
+        }
+      }
+      if (!profile) {
+        const snap = await firestore.collection('wardens').where('email', '==', cleanEmail).limit(1).get();
+        if (!snap.empty) {
+          profile = { id: snap.docs[0].id, ...snap.docs[0].data() };
+        }
+      }
+    } catch (e) {
+      console.warn('Firestore warden profile lookup note:', e.message);
+    }
+  }
+
+  if (!profile) {
+    try {
+      const cached = JSON.parse(localStorage.getItem('klsvdit_wardens_cache') || '[]');
+      profile = cached.find(w => (w.email || '').toLowerCase() === cleanEmail);
+    } catch (e) {}
+  }
+
+  if (!profile) {
+    try { await firebaseAuth.signOut(); } catch (e) {}
+    throw new Error('No warden account found for ' + cleanEmail + '. Please ask your Hostel Incharge to register your account.');
+  }
+
+  // 3. Check Authorization Status AFTER Profile Lookup
+  const status = (profile.status || 'approved').toLowerCase();
+  const hostelUnitName = (profile.hostelUnit || profile.hostelType || 'boys').toUpperCase();
+
+  if (status === 'pending') {
+    try { await firebaseAuth.signOut(); } catch (e) {}
+    throw new Error(`Your Warden account registration is PENDING authorization by the ${hostelUnitName} Hostel Incharge. Please ask your Incharge to approve your account.`);
+  }
+  if (status === 'rejected') {
+    try { await firebaseAuth.signOut(); } catch (e) {}
+    throw new Error(`Your Warden account registration was REJECTED by the ${hostelUnitName} Hostel Incharge.`);
+  }
+  if (status === 'deactivated' || (status === 'approved' && profile.isActive === false)) {
+    try { await firebaseAuth.signOut(); } catch (e) {}
+    throw new Error(`Your Warden account is currently DEACTIVATED by the ${hostelUnitName} Hostel Incharge.`);
+  }
 
   let hostelType = (profile.hostelUnit || profile.hostelType || '').toLowerCase();
   if (!hostelType || hostelType === 'none') {
@@ -303,24 +198,25 @@ async function loginWarden(email, password) {
   profile.hostelType = hostelType;
   profile.hostelUnit = hostelType;
 
-  // 4. Synchronize identity documents at users/{uid} and wardens/{uid}
-  if (userCredential?.user?.uid) {
-    const authUid = userCredential.user.uid;
+  // 4. Synchronize identity document at wardens/{authUid} and users/{authUid}
+  if (authUid) {
     profile.id = authUid;
     try {
       const firestoreDb = getFirebaseDb();
-      const userDocData = {
-        role: 'warden',
-        hostelUnit: hostelType,
-        hostelType: hostelType,
-        email: cleanEmail,
-        name: profile.name || `${hostelType.toUpperCase()} Warden`,
-        status: 'approved',
-        isActive: true,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      };
-      await firestoreDb.collection('users').doc(authUid).set(userDocData, { merge: true });
-      await firestoreDb.collection('wardens').doc(authUid).set({ id: authUid, ...profile, ...userDocData }, { merge: true });
+      if (firestoreDb) {
+        const userDocData = {
+          role: 'warden',
+          hostelUnit: hostelType,
+          hostelType: hostelType,
+          email: cleanEmail,
+          name: profile.name || `${hostelType.toUpperCase()} Warden`,
+          status: 'approved',
+          isActive: true,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        await firestoreDb.collection('users').doc(authUid).set(userDocData, { merge: true });
+        await firestoreDb.collection('wardens').doc(authUid).set({ id: authUid, ...profile, ...userDocData }, { merge: true });
+      }
     } catch (syncErr) {
       console.warn('Warden doc sync note:', syncErr.message);
     }
