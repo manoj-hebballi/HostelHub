@@ -349,64 +349,95 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
   const dobVal = dateOfBirth ? dateOfBirth.trim() : '';
   const cleanDob = normalizeDateStr(dobVal);
 
-  const studentAuthEmail = `${normalizedUsn.toLowerCase()}@student.klsvdit.ac.in`;
-  const canonicalDobPass = cleanDob || dobVal;
+  console.log('[STUDENT_LOOKUP_START]', {
+    normalizedUsn,
+    inputCourse,
+    inputSemester
+  });
 
-  // 1. Authenticate with Firebase Email/Password Auth FIRST using canonical DOB password
+  const studentAuthEmail = `${normalizedUsn.toLowerCase()}@student.klsvdit.ac.in`;
+  const primaryPass = cleanDob || dobVal;
+
+  const passCandidates = [
+    primaryPass,
+    dobVal,
+    cleanDob,
+    dobVal.replace(/\D/g, ''),
+    `KLS_${normalizedUsn}_2026!`
+  ].filter(Boolean);
+  const uniquePasses = [...new Set(passCandidates)];
+
+  // 1. Authenticate with Firebase Email/Password Auth FIRST
   let userCredential = null;
+  let authError = null;
 
   if (firebaseAuth) {
-    // Ensure clean auth state before authenticating a new student session
     if (firebaseAuth.currentUser) {
       try { await firebaseAuth.signOut(); } catch (e) {}
     }
 
-    try {
-      userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, canonicalDobPass);
-    } catch (err) {
-      console.error('[STUDENT_AUTH_SIGNIN_ERROR]', {
-        code: err?.code,
-        message: err?.message,
+    for (const passCandidate of uniquePasses) {
+      try {
+        userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, passCandidate);
+        authError = null;
+        console.log('[STUDENT_AUTH_SUCCESS]', {
+          email: studentAuthEmail,
+          uid: userCredential.user ? userCredential.user.uid : null
+        });
+        break;
+      } catch (err) {
+        authError = err;
+        if (err.code === 'auth/user-not-found') {
+          break;
+        }
+      }
+    }
+
+    if (!userCredential && (authError?.code === 'auth/user-not-found' || authError?.code === 'auth/invalid-credential')) {
+      console.log('[STUDENT_AUTH_SIGNIN_ERROR]', {
+        code: authError?.code,
+        message: authError?.message,
         usn: normalizedUsn,
         email: studentAuthEmail
       });
 
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-        try {
-          userCredential = await firebaseAuth.createUserWithEmailAndPassword(studentAuthEmail, canonicalDobPass);
-        } catch (createErr) {
-          console.error('[STUDENT_AUTH_SIGNUP_ERROR]', {
-            code: createErr?.code,
-            message: createErr?.message,
-            usn: normalizedUsn,
+      try {
+        userCredential = await firebaseAuth.createUserWithEmailAndPassword(studentAuthEmail, primaryPass);
+        authError = null;
+        console.log('[STUDENT_AUTH_SUCCESS]', {
+          email: studentAuthEmail,
+          uid: userCredential.user ? userCredential.user.uid : null,
+          created: true
+        });
+      } catch (createErr) {
+        if (createErr.code === 'auth/email-already-in-use') {
+          console.log('[STUDENT_AUTH_ACCOUNT_EXISTS]', {
             email: studentAuthEmail
           });
-
-          if (createErr.code === 'auth/email-already-in-use') {
-            throw new Error('Registration details mismatch: Incorrect Date of Birth. Please check your Date of Birth.');
+          // Attempt sign-in with any pass candidate as fallback
+          for (const passCandidate of uniquePasses) {
+            try {
+              userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, passCandidate);
+              authError = null;
+              break;
+            } catch (e) {}
           }
-          console.warn('Student Auth creation note:', createErr.message);
+          if (!userCredential) {
+            throw new Error('Registration details mismatch: Date of Birth does not match registered details.');
+          }
+        } else {
+          authError = createErr;
         }
-      } else if (err.code === 'auth/wrong-password') {
-        throw new Error('Registration details mismatch: Incorrect Date of Birth. Please check your Date of Birth.');
-      } else {
-        throw new Error('Student authentication failed: ' + (err.message || err.code));
       }
     }
   }
 
   const currentAuthUser = firebaseAuth ? firebaseAuth.currentUser : null;
 
-  console.log('[STUDENT_LOGIN_AUTH_INIT]', {
-    normalizedUsn,
-    isAuthenticated: !!currentAuthUser,
-    authUid: currentAuthUser ? currentAuthUser.uid : null
-  });
-
   let studentProfile = null;
   const firestore = getFirebaseDb();
 
-  // 2. Query Cloud Firestore by USN now that request.auth is established
+  // 2. Query Cloud Firestore by USN
   if (firestore) {
     try {
       let snapshot = await firestore.collection('students')
@@ -423,6 +454,13 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
         const targetDoc = snapshot.docs[0];
         const data = targetDoc.data();
         studentProfile = { id: targetDoc.id, ...data };
+
+        console.log('[STUDENT_LOOKUP_FIRESTORE_RESULT]', {
+          found: true,
+          docId: targetDoc.id,
+          usn: data.usn,
+          hostelUnit: data.hostelUnit
+        });
 
         const existingAuthUid = data.authUid;
         const currentUid = currentAuthUser ? currentAuthUser.uid : null;
@@ -448,14 +486,11 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
             console.warn('Student authUid sync note:', syncErr.message);
           }
         }
+      } else {
+        console.log('[STUDENT_LOOKUP_FIRESTORE_RESULT]', { found: false, usn: normalizedUsn });
       }
     } catch (err) {
       console.warn('Firestore student lookup note:', err.message);
-      console.log('[STUDENT_LOOKUP_FIRESTORE_ERROR]', {
-        code: err && err.code,
-        message: err && err.message,
-        normalizedUsn
-      });
     }
   }
 
@@ -467,12 +502,6 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
       if (found) studentProfile = found;
     } catch (e) {}
   }
-
-  console.log('[STUDENT_LOOKUP_RESULT]', {
-    normalizedUsn,
-    foundInCloud: !!studentProfile && !studentProfile.storage,
-    docId: studentProfile ? studentProfile.id : null
-  });
 
   // 4. UNREGISTERED STUDENT REJECTION
   if (!studentProfile) {

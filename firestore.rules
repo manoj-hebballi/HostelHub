@@ -301,17 +301,9 @@ service cloud.firestore {
             resource.data.email == request.auth.token.email
           ) ||
 
-          (
-            isWarden() &&
-            resource != null &&
-            resource.data.hostelUnit == getHostelUnit()
-          ) ||
+          isWarden() ||
 
-          (
-            isIncharge() &&
-            resource != null &&
-            resource.data.hostelUnit == getHostelUnit()
-          )
+          isIncharge()
         );
 
 
