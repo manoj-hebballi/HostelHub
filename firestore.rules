@@ -339,7 +339,7 @@ service cloud.firestore {
           request.auth.uid == wardenId ||
 
           (
-            isWarden() &&
+            isIncharge() &&
             (
               resource.data.hostelUnit == getHostelUnit() ||
               resource.data.hostelType == getHostelUnit() ||
@@ -348,7 +348,7 @@ service cloud.firestore {
           ) ||
 
           (
-            isIncharge() &&
+            isWarden() &&
             (
               resource.data.hostelUnit == getHostelUnit() ||
               resource.data.hostelType == getHostelUnit() ||
