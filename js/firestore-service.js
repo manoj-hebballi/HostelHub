@@ -1129,33 +1129,53 @@ async function updateWardenApprovalStatus(
     status === 'approved' ||
     status === 'active';
 
-  const payload = {
+  const updateFields = {
     status: status,
     isActive: isApproved,
     approvedBy: inchargeName,
-    approvedAt: getFieldValue().serverTimestamp(),
     updatedAt: getFieldValue().serverTimestamp()
   };
+  if (isApproved) {
+    updateFields.approvedAt = getFieldValue().serverTimestamp();
+  }
 
-  console.log('[WARDEN_WRITE_PAYLOAD]', payload);
+  console.log('[WARDEN_BUTTON_COMPARISON]', {
+    projectId: (typeof firebase !== 'undefined' && firebase.app) ? firebase.app().options.projectId : 'UNKNOWN',
+    appName: (typeof firebase !== 'undefined' && firebase.app) ? firebase.app().name : 'UNKNOWN',
+    uid: currentUser ? currentUser.uid : 'NULL',
+    email: currentUser ? currentUser.email : 'NULL',
+    wardenId: wardenId,
+    path: `wardens/${wardenId}`,
+    payload: updateFields
+  });
 
   if (!firestore) {
     try {
       const cached = JSON.parse(localStorage.getItem('klsvdit_wardens_cache') || '[]');
-      persistLocalJson('klsvdit_wardens_cache', cached.map(w => w.id === wardenId ? { ...w, ...payload } : w));
+      persistLocalJson('klsvdit_wardens_cache', cached.map(w => w.id === wardenId ? { ...w, ...updateFields } : w));
     } catch (e) {}
     return { storage: 'local', success: false, error: 'Firestore DB offline', errorCode: 'offline' };
   }
 
   try {
-    await firestore
-      .collection('wardens')
-      .doc(wardenId)
-      .set(payload, { merge: true });
+    const docRef = firestore.collection('wardens').doc(wardenId);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      console.error('[WARDEN_NOT_FOUND]', wardenId);
+      return {
+        storage: 'local',
+        success: false,
+        errorCode: 'not-found',
+        error: `Warden document wardens/${wardenId} does not exist in Cloud Firestore.`
+      };
+    }
+
+    await docRef.update(updateFields);
 
     try {
       const cached = JSON.parse(localStorage.getItem('klsvdit_wardens_cache') || '[]');
-      persistLocalJson('klsvdit_wardens_cache', cached.map(w => w.id === wardenId ? { ...w, ...payload, storage: 'firestore' } : w));
+      persistLocalJson('klsvdit_wardens_cache', cached.map(w => w.id === wardenId ? { ...w, ...updateFields, storage: 'firestore' } : w));
     } catch (e) {}
 
     console.log('[WARDEN_ACTION_SUCCESS]', {
@@ -1180,7 +1200,7 @@ async function updateWardenApprovalStatus(
 
     try {
       const cached = JSON.parse(localStorage.getItem('klsvdit_wardens_cache') || '[]');
-      persistLocalJson('klsvdit_wardens_cache', cached.map(w => w.id === wardenId ? { ...w, ...payload, storage: 'local' } : w));
+      persistLocalJson('klsvdit_wardens_cache', cached.map(w => w.id === wardenId ? { ...w, ...updateFields, storage: 'local' } : w));
     } catch (e) {}
 
     return {
