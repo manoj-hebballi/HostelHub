@@ -338,28 +338,35 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
     throw new Error('Please fill in all details: USN, Course, Semester, and Date of Birth.');
   }
 
+  const firebaseAuth = getFirebaseAuth();
   const normalizedUsn = usn.trim().toUpperCase();
   const inputCourse = course ? course.trim() : '';
   const inputSemester = semester ? semester.trim() : '';
   const dobVal = dateOfBirth ? dateOfBirth.trim() : '';
 
-  // 1. Ensure authenticated session (via Anonymous Auth or existing session) BEFORE querying Firestore
-  if (typeof firebase !== 'undefined' && firebase.auth && !firebase.auth().currentUser) {
+  const studentAuthEmail = `${normalizedUsn.toLowerCase()}@student.klsvdit.ac.in`;
+  const studentAuthPass = `KLS_${normalizedUsn}_2026!`;
+
+  // 1. Authenticate with Firebase Email/Password Auth FIRST (eliminates Anonymous Auth dependency)
+  let userCredential = null;
+  if (firebaseAuth) {
     try {
-      await firebase.auth().signInAnonymously();
-    } catch (e) {
-      if (e && e.code !== 'auth/admin-restricted-operation') {
-        console.warn('Student anonymous auth note:', e.message || e);
+      userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, studentAuthPass);
+    } catch (err) {
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        try {
+          userCredential = await firebaseAuth.createUserWithEmailAndPassword(studentAuthEmail, studentAuthPass);
+        } catch (createErr) {
+          console.warn('Student Firebase Auth creation note:', createErr.message);
+        }
       }
     }
   }
 
-  const currentAuthUser = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth().currentUser : null;
+  const currentAuthUser = firebaseAuth ? firebaseAuth.currentUser : null;
 
-  console.log('[STUDENT_LOOKUP_START]', {
+  console.log('[STUDENT_LOGIN_AUTH_INIT]', {
     normalizedUsn,
-    inputCourse,
-    inputSemester,
     isAuthenticated: !!currentAuthUser,
     authUid: currentAuthUser ? currentAuthUser.uid : null
   });
@@ -367,7 +374,7 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
   let studentProfile = null;
   const firestore = getFirebaseDb();
 
-  // 2. Query Cloud Firestore by USN now that session is authenticated
+  // 2. Query Cloud Firestore by USN now that request.auth is established
   if (firestore) {
     try {
       let snapshot = await firestore.collection('students')
@@ -394,7 +401,7 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
     }
   }
 
-  // 3. Local Storage cache lookup fallback
+  // 3. Local Storage cache lookup fallback (if offline)
   if (!studentProfile) {
     try {
       const cached = JSON.parse(localStorage.getItem('klsvdit_students_cache') || '[]');
@@ -406,36 +413,50 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
   console.log('[STUDENT_LOOKUP_RESULT]', {
     normalizedUsn,
     foundInCloud: !!studentProfile && !studentProfile.storage,
-    foundInLocal: !!studentProfile && studentProfile.storage === 'local',
     docId: studentProfile ? studentProfile.id : null
   });
 
   // 4. UNREGISTERED STUDENT REJECTION
   if (!studentProfile) {
+    if (currentAuthUser) {
+      try { await firebaseAuth.signOut(); } catch (e) {}
+    }
     throw new Error('USN not registered with Warden. Please contact your Hostel Warden.');
   }
 
   // 5. INACTIVE ACCOUNT REJECTION
   const status = (studentProfile.status || 'active').toLowerCase();
   if (status === 'inactive' || status === 'rejected' || studentProfile.isActive === false) {
+    if (currentAuthUser) {
+      try { await firebaseAuth.signOut(); } catch (e) {}
+    }
     throw new Error('Your student account is currently inactive. Please contact your Hostel Warden.');
   }
 
   // 6. COURSE MATCH CHECK
   const regCourse = studentProfile.course || studentProfile.branch || '';
   if (!regCourse || !isCourseMatch(inputCourse, regCourse)) {
+    if (currentAuthUser) {
+      try { await firebaseAuth.signOut(); } catch (e) {}
+    }
     throw new Error('Registration details mismatch: Course does not match registered details. Please contact your Warden.');
   }
 
   // 7. SEMESTER MATCH CHECK
   const regSem = studentProfile.semester || studentProfile.sem || '';
   if (!regSem || !isSemesterMatch(inputSemester, regSem)) {
+    if (currentAuthUser) {
+      try { await firebaseAuth.signOut(); } catch (e) {}
+    }
     throw new Error('Registration details mismatch: Semester does not match registered details. Please contact your Warden.');
   }
 
   // 8. DATE OF BIRTH MATCH CHECK
   const regDob = studentProfile.dateOfBirth || studentProfile.dob || studentProfile.birthDate || '';
   if (!regDob || !isDobMatch(dobVal, regDob)) {
+    if (currentAuthUser) {
+      try { await firebaseAuth.signOut(); } catch (e) {}
+    }
     throw new Error('Registration details mismatch: Date of Birth does not match registered details. Please contact your Warden.');
   }
 
