@@ -890,6 +890,16 @@ async function updateWardenStatus(
 async function registerWardenAccount(
   wardenData
 ) {
+  console.log('[WARDEN_REGISTRATION_START]', {
+    currentUser: (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser)
+      ? {
+          uid: firebase.auth().currentUser.uid,
+          email: firebase.auth().currentUser.email
+        }
+      : null,
+    wardenData: wardenData
+  });
+
   const firestore = getDb();
 
   const unit = normalizeHostelUnit(
@@ -934,7 +944,22 @@ async function registerWardenAccount(
 
     isActive:
       isApproved
-  };  if (!firestore) {
+  };
+
+  const createPayload = {
+    ...payload,
+    createdAt: getFieldValue().serverTimestamp(),
+    updatedAt: getFieldValue().serverTimestamp()
+  };
+
+  console.log('[WARDEN_REGISTRATION_PAYLOAD]', {
+    docId,
+    path: `wardens/${docId}`,
+    unit,
+    createPayload
+  });
+
+  if (!firestore) {
     let localWardens =
       JSON.parse(
         localStorage.getItem(
@@ -964,23 +989,15 @@ async function registerWardenAccount(
   }
 
   try {
+    console.log('[WARDEN_REGISTRATION_BEFORE_SET]', {
+      path: `wardens/${docId}`,
+      payload: createPayload
+    });
+
     await firestore
       .collection('wardens')
       .doc(docId)
-      .set(
-        {
-          ...payload,
-
-          createdAt:
-            getFieldValue().serverTimestamp(),
-
-          updatedAt:
-            getFieldValue().serverTimestamp()
-        },
-        {
-          merge: true
-        }
-      );
+      .set(createPayload, { merge: true });
 
     let localWardens =
       JSON.parse(
@@ -1010,12 +1027,14 @@ async function registerWardenAccount(
     return { id: docId, ...payload, storage: 'firestore' };
 
   } catch (err) {
-    console.error(
-      '[WARDEN_REGISTRATION_FIRESTORE_ERROR]',
-      err && err.code,
-      err && err.message,
-      err
-    );
+    console.error('[WARDEN_REGISTRATION_FIRESTORE_ERROR]', {
+      code: err && err.code,
+      message: err && err.message,
+      name: err && err.name,
+      docId,
+      path: `wardens/${docId}`,
+      unit
+    });
 
     let localWardens =
       JSON.parse(
