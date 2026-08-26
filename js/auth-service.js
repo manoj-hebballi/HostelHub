@@ -343,19 +343,29 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
   const inputCourse = course ? course.trim() : '';
   const inputSemester = semester ? semester.trim() : '';
   const dobVal = dateOfBirth ? dateOfBirth.trim() : '';
+  const cleanDob = normalizeDateStr(dobVal);
 
   const studentAuthEmail = `${normalizedUsn.toLowerCase()}@student.klsvdit.ac.in`;
-  const studentAuthPass = `KLS_${normalizedUsn}_2026!`;
+  const primaryPass = cleanDob || dobVal;
 
-  // 1. Authenticate with Firebase Email/Password Auth FIRST (eliminates Anonymous Auth dependency)
+  // 1. Authenticate with Firebase Email/Password Auth FIRST using DOB as password
   let userCredential = null;
   if (firebaseAuth) {
     try {
-      userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, studentAuthPass);
+      userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, primaryPass);
     } catch (err) {
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         try {
-          userCredential = await firebaseAuth.createUserWithEmailAndPassword(studentAuthEmail, studentAuthPass);
+          userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, dobVal);
+        } catch (e1) {
+          try {
+            userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, `KLS_${normalizedUsn}_2026!`);
+          } catch (e2) {}
+        }
+      }
+      if (!userCredential && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential')) {
+        try {
+          userCredential = await firebaseAuth.createUserWithEmailAndPassword(studentAuthEmail, primaryPass);
         } catch (createErr) {
           console.warn('Student Firebase Auth creation note:', createErr.message);
         }
