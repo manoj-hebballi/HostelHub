@@ -351,24 +351,34 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
   // 1. Authenticate with Firebase Email/Password Auth FIRST using DOB as password
   let userCredential = null;
   if (firebaseAuth) {
+    // Ensure clean auth state before authenticating a new student session
+    if (firebaseAuth.currentUser) {
+      try { await firebaseAuth.signOut(); } catch (e) {}
+    }
+
     try {
       userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, primaryPass);
     } catch (err) {
-      if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        try {
-          userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, dobVal);
-        } catch (e1) {
-          try {
-            userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, `KLS_${normalizedUsn}_2026!`);
-          } catch (e2) {}
-        }
-      }
-      if (!userCredential && (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential')) {
+      if (err.code === 'auth/user-not-found') {
         try {
           userCredential = await firebaseAuth.createUserWithEmailAndPassword(studentAuthEmail, primaryPass);
         } catch (createErr) {
-          console.warn('Student Firebase Auth creation note:', createErr.message);
+          console.warn('Student Auth creation fallback note:', createErr.message);
         }
+      } else if (err.code === 'auth/invalid-credential') {
+        // invalid-credential in SDK 10+ can mean user not found OR wrong password
+        try {
+          userCredential = await firebaseAuth.createUserWithEmailAndPassword(studentAuthEmail, primaryPass);
+        } catch (createErr) {
+          if (createErr.code === 'auth/email-already-in-use') {
+            throw new Error('Registration details mismatch: Incorrect Date of Birth. Please check your Date of Birth.');
+          }
+          console.warn('Student Auth creation fallback note:', createErr.message);
+        }
+      } else if (err.code === 'auth/wrong-password') {
+        throw new Error('Registration details mismatch: Incorrect Date of Birth. Please check your Date of Birth.');
+      } else {
+        throw new Error('Student authentication failed: ' + (err.message || err.code));
       }
     }
   }
