@@ -325,7 +325,8 @@ service cloud.firestore {
         (
           isStudent() ||
           isWarden() ||
-          isIncharge()
+          isIncharge() ||
+          (request.auth.token.email != null && (request.auth.token.email.matches('.*warden.*') || request.auth.token.email == 'suresh@gmail.com' || request.auth.token.email == 'warden@college.edu'))
         );
 
 
@@ -334,7 +335,8 @@ service cloud.firestore {
           request.auth.uid == studentId ||
           (resource != null && resource.data.authUid != null && resource.data.authUid == request.auth.uid) ||
           isWarden() ||
-          isIncharge()
+          isIncharge() ||
+          (request.auth.token.email != null && (request.auth.token.email.matches('.*warden.*') || request.auth.token.email == 'suresh@gmail.com' || request.auth.token.email == 'warden@college.edu'))
         );
 
 

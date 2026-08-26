@@ -322,7 +322,11 @@ function isDobMatch(inputDob, registeredDob) {
   if (!inputDob || !registeredDob) return true;
   const d1 = normalizeDateStr(inputDob);
   const d2 = normalizeDateStr(registeredDob);
-  return d1 === d2;
+  if (d1 === d2) return true;
+  const raw1 = String(inputDob).replace(/\D/g, '');
+  const raw2 = String(registeredDob).replace(/\D/g, '');
+  if (raw1 && raw2 && raw1 === raw2) return true;
+  return false;
 }
 
 /**
@@ -481,6 +485,24 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
 
   // 6. COURSE MATCH CHECK
   const regCourse = studentProfile.course || studentProfile.branch || '';
+  const regSem = studentProfile.semester || studentProfile.sem || '';
+  const regDob = studentProfile.dateOfBirth || studentProfile.dob || studentProfile.birthDate || '';
+
+  console.log('[STUDENT_LOOKUP_DETAILS_CHECK]', {
+    normalizedUsn,
+    inputCourse,
+    regCourse,
+    isCourseMatch: isCourseMatch(inputCourse, regCourse),
+    inputSemester,
+    regSem,
+    isSemesterMatch: isSemesterMatch(inputSemester, regSem),
+    inputDob: dobVal,
+    regDob,
+    isDobMatch: isDobMatch(dobVal, regDob),
+    status: studentProfile.status,
+    isActive: studentProfile.isActive
+  });
+
   if (!regCourse || !isCourseMatch(inputCourse, regCourse)) {
     if (currentAuthUser) {
       try { await firebaseAuth.signOut(); } catch (e) {}
@@ -489,7 +511,6 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
   }
 
   // 7. SEMESTER MATCH CHECK
-  const regSem = studentProfile.semester || studentProfile.sem || '';
   if (!regSem || !isSemesterMatch(inputSemester, regSem)) {
     if (currentAuthUser) {
       try { await firebaseAuth.signOut(); } catch (e) {}
@@ -498,7 +519,6 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
   }
 
   // 8. DATE OF BIRTH MATCH CHECK
-  const regDob = studentProfile.dateOfBirth || studentProfile.dob || studentProfile.birthDate || '';
   if (!regDob || !isDobMatch(dobVal, regDob)) {
     if (currentAuthUser) {
       try { await firebaseAuth.signOut(); } catch (e) {}
