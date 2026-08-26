@@ -187,112 +187,70 @@ async function getStudentByUsn(usn) {
 
 
 async function getStudentsByHostel(hostelType) {
-  const targetType = normalizeHostelUnit(
-    hostelType || 'boys'
-  );
-
+  const targetType = normalizeHostelUnit(hostelType || 'boys');
   let localCache = [];
 
   try {
-    const cached = JSON.parse(
-      localStorage.getItem(
-        'klsvdit_students_cache'
-      ) || '[]'
-    );
-
+    const cached = JSON.parse(localStorage.getItem('klsvdit_students_cache') || '[]');
     localCache = cached.filter(student => {
       const unit = getHostelUnitFromData(student, '');
-
-      return (
-        targetType === 'all' ||
-        unit === targetType
-      );
+      return targetType === 'all' || unit === targetType;
     });
   } catch (e) {}
 
   try {
     const firestore = getDb();
-
     if (!firestore) {
-      return localCache.sort(
-        (a, b) =>
-          (a.name || '').localeCompare(
-            b.name || ''
-          )
-      );
+      return localCache.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
-
-    let snap = await firestore
-      .collection('students')
-      .where('hostelUnit', '==', targetType)
-      .get();
-
-    if (snap.empty) {
-      snap = await firestore
-        .collection('students')
-        .where('hostelType', '==', targetType)
-        .get();
-    }
-
-    if (snap.empty) {
-      snap = await firestore
-        .collection('students')
-        .where('hosteltype', '==', targetType)
-        .get();
-    }
-
-    const list = snap.docs.map(doc => {
-      const data = doc.data();
-
-      return {
-        id: doc.id,
-        ...data,
-
-        hostelUnit: getHostelUnitFromData(
-          data,
-          targetType
-        )
-      };
-    });
 
     const mergedMap = new Map();
 
-    list.forEach(student => {
-      mergedMap.set(student.id, student);
-    });
-
-    localCache.forEach(student => {
-      mergedMap.set(student.id, {
-        ...mergedMap.get(student.id),
-        ...student
+    // Query by hostelUnit
+    try {
+      const snap1 = await firestore.collection('students').where('hostelUnit', '==', targetType).get();
+      snap1.docs.forEach(doc => {
+        const data = doc.data();
+        mergedMap.set(doc.id, { id: doc.id, ...data, hostelUnit: getHostelUnitFromData(data, targetType) });
       });
-    });
+    } catch (e) {}
 
-    return Array.from(
-      mergedMap.values()
-    ).sort(
-      (a, b) =>
-        (a.name || '').localeCompare(
-          b.name || ''
-        )
-    );
+    // Query by hostelType
+    try {
+      const snap2 = await firestore.collection('students').where('hostelType', '==', targetType).get();
+      snap2.docs.forEach(doc => {
+        const data = doc.data();
+        if (!mergedMap.has(doc.id)) {
+          mergedMap.set(doc.id, { id: doc.id, ...data, hostelUnit: getHostelUnitFromData(data, targetType) });
+        }
+      });
+    } catch (e) {}
+
+    // Query by hosteltype
+    try {
+      const snap3 = await firestore.collection('students').where('hosteltype', '==', targetType).get();
+      snap3.docs.forEach(doc => {
+        const data = doc.data();
+        if (!mergedMap.has(doc.id)) {
+          mergedMap.set(doc.id, { id: doc.id, ...data, hostelUnit: getHostelUnitFromData(data, targetType) });
+        }
+      });
+    } catch (e) {}
+
+    // If Cloud Firestore returned data, use it as authoritative source
+    if (mergedMap.size > 0) {
+      return Array.from(mergedMap.values()).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    }
+
+    // Fallback to localCache if Cloud Firestore returned no documents
+    return localCache.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   } catch (err) {
     if (!isFirestoreFallbackError(err)) {
-      console.warn(
-        'Firestore student fetch note:',
-        err.code,
-        err.message
-      );
+      console.warn('Firestore student fetch note:', err.code, err.message);
     }
+    return localCache.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
   }
-
-  return localCache.sort(
-    (a, b) =>
-      (a.name || '').localeCompare(
-        b.name || ''
-      )
-  );
 }
 
 
