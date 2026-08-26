@@ -181,6 +181,15 @@ service cloud.firestore {
         : request.auth.token.hostelUnit != null
           ? request.auth.token.hostelUnit
 
+        : request.auth.token.email != null && request.auth.token.email == 'incharge.boys@klsvdit.ac.in'
+          ? 'boys'
+
+        : request.auth.token.email != null && request.auth.token.email == 'incharge.girls1@klsvdit.ac.in'
+          ? 'girls1'
+
+        : request.auth.token.email != null && request.auth.token.email == 'incharge.girls2@klsvdit.ac.in'
+          ? 'girls2'
+
         : hasInchargeDoc() && getInchargeData().hostelUnit != null
           ? getInchargeData().hostelUnit
 
@@ -207,15 +216,6 @@ service cloud.firestore {
 
         : hasUserDoc() && getUserData().hosteltype != null
           ? getUserData().hosteltype
-
-        : request.auth.token.email != null && request.auth.token.email == 'incharge.boys@klsvdit.ac.in'
-          ? 'boys'
-
-        : request.auth.token.email != null && request.auth.token.email == 'incharge.girls1@klsvdit.ac.in'
-          ? 'girls1'
-
-        : request.auth.token.email != null && request.auth.token.email == 'incharge.girls2@klsvdit.ac.in'
-          ? 'girls2'
 
         : 'none';
     }
