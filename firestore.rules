@@ -417,11 +417,53 @@ service cloud.firestore {
           request.resource.data.email is string &&
           request.resource.data.email.size() > 0 &&
           (
-            request.resource.data.hostelUnit == 'boys' ||
-            request.resource.data.hostelUnit == 'girls1' ||
-            request.resource.data.hostelUnit == 'girls2'
+            (
+              request.resource.data.hostelUnit == 'boys' ||
+              request.resource.data.hostelUnit == 'girls1' ||
+              request.resource.data.hostelUnit == 'girls2'
+            ) &&
+            request.resource.data.status == 'pending'
+          )
+        ) ||
+        (
+          isAuthenticated() &&
+          request.auth.token.email != null &&
+          request.resource.data.name != null &&
+          request.resource.data.name is string &&
+          request.resource.data.name.size() > 0 &&
+          request.resource.data.email != null &&
+          request.resource.data.email is string &&
+          request.resource.data.email.size() > 0 &&
+          (
+            request.resource.data.role == 'warden' ||
+            request.resource.data.role == 'Warden'
           ) &&
-          request.resource.data.status == 'pending'
+          (
+            (
+              request.auth.token.email == 'incharge.boys@klsvdit.ac.in' &&
+              (
+                request.resource.data.hostelUnit == 'boys' ||
+                request.resource.data.hostelType == 'boys' ||
+                request.resource.data.hosteltype == 'boys'
+              )
+            ) ||
+            (
+              request.auth.token.email == 'incharge.girls1@klsvdit.ac.in' &&
+              (
+                request.resource.data.hostelUnit == 'girls1' ||
+                request.resource.data.hostelType == 'girls1' ||
+                request.resource.data.hosteltype == 'girls1'
+              )
+            ) ||
+            (
+              request.auth.token.email == 'incharge.girls2@klsvdit.ac.in' &&
+              (
+                request.resource.data.hostelUnit == 'girls2' ||
+                request.resource.data.hostelType == 'girls2' ||
+                request.resource.data.hosteltype == 'girls2'
+              )
+            )
+          )
         );
 
 
