@@ -423,7 +423,7 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
             } catch (e) {}
           }
           if (!userCredential) {
-            throw new Error('Registration details mismatch: Date of Birth does not match registered details.');
+            throw new Error('Firebase Auth credential invalid: Student account exists in Auth but password does not match registered DOB. Please contact your Hostel Warden.');
           }
         } else {
           authError = createErr;

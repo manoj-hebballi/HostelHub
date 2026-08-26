@@ -185,49 +185,34 @@ service cloud.firestore {
        ========================================================= */
 
     function getHostelUnit() {
-
       return !isAuthenticated()
         ? 'none'
-
         : request.auth.token.hostelUnit != null
           ? request.auth.token.hostelUnit
-
-        : request.auth.token.email != null && request.auth.token.email == 'incharge.boys@klsvdit.ac.in'
+        : request.auth.token.email != null && (request.auth.token.email == 'incharge.boys@klsvdit.ac.in' || request.auth.token.email.matches('.*boys.*'))
           ? 'boys'
-
-        : request.auth.token.email != null && request.auth.token.email == 'incharge.girls1@klsvdit.ac.in'
+        : request.auth.token.email != null && (request.auth.token.email == 'incharge.girls1@klsvdit.ac.in' || request.auth.token.email.matches('.*girls1.*'))
           ? 'girls1'
-
-        : request.auth.token.email != null && request.auth.token.email == 'incharge.girls2@klsvdit.ac.in'
+        : request.auth.token.email != null && (request.auth.token.email == 'incharge.girls2@klsvdit.ac.in' || request.auth.token.email.matches('.*girls2.*'))
           ? 'girls2'
-
         : hasInchargeDoc() && getInchargeData().hostelUnit != null
           ? getInchargeData().hostelUnit
-
         : hasInchargeDoc() && getInchargeData().hostelType != null
           ? getInchargeData().hostelType
-
         : hasInchargeDoc() && getInchargeData().hosteltype != null
           ? getInchargeData().hosteltype
-
         : hasWardenDoc() && getWardenData().hostelUnit != null
           ? getWardenData().hostelUnit
-
         : hasWardenDoc() && getWardenData().hostelType != null
           ? getWardenData().hostelType
-
         : hasWardenDoc() && getWardenData().hosteltype != null
           ? getWardenData().hosteltype
-
         : hasUserDoc() && getUserData().hostelUnit != null
           ? getUserData().hostelUnit
-
         : hasUserDoc() && getUserData().hostelType != null
           ? getUserData().hostelType
-
         : hasUserDoc() && getUserData().hosteltype != null
           ? getUserData().hosteltype
-
         : 'none';
     }
 
@@ -301,9 +286,27 @@ service cloud.firestore {
             resource.data.email == request.auth.token.email
           ) ||
 
-          isWarden() ||
+          (
+            isWarden() &&
+            (
+              resource == null ||
+              resource.data.hostelUnit == getHostelUnit() ||
+              resource.data.hostelType == getHostelUnit() ||
+              resource.data.hosteltype == getHostelUnit() ||
+              getHostelUnit() == 'all'
+            )
+          ) ||
 
-          isIncharge()
+          (
+            isIncharge() &&
+            (
+              resource == null ||
+              resource.data.hostelUnit == getHostelUnit() ||
+              resource.data.hostelType == getHostelUnit() ||
+              resource.data.hosteltype == getHostelUnit() ||
+              getHostelUnit() == 'all'
+            )
+          )
         );
 
 
