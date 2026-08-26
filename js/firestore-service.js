@@ -1139,14 +1139,10 @@ async function updateWardenApprovalStatus(
     updateFields.approvedAt = getFieldValue().serverTimestamp();
   }
 
-  console.log('[WARDEN_BUTTON_COMPARISON]', {
+  console.log('[WARDEN_DB_IDENTITY]', {
+    sameInstance: firestore === (typeof firebase !== 'undefined' && firebase.firestore ? firebase.firestore() : null),
     projectId: (typeof firebase !== 'undefined' && firebase.app) ? firebase.app().options.projectId : 'UNKNOWN',
-    appName: (typeof firebase !== 'undefined' && firebase.app) ? firebase.app().name : 'UNKNOWN',
-    uid: currentUser ? currentUser.uid : 'NULL',
-    email: currentUser ? currentUser.email : 'NULL',
-    wardenId: wardenId,
-    path: `wardens/${wardenId}`,
-    payload: updateFields
+    appName: (typeof firebase !== 'undefined' && firebase.app) ? firebase.app().name : 'UNKNOWN'
   });
 
   if (!firestore) {
@@ -1158,8 +1154,33 @@ async function updateWardenApprovalStatus(
   }
 
   try {
+    console.log('[WARDEN_STEP_1_BEFORE_GET]', {
+      projectId: (typeof firebase !== 'undefined' && firebase.app) ? firebase.app().options.projectId : 'UNKNOWN',
+      uid: currentUser ? currentUser.uid : 'NULL',
+      email: currentUser ? currentUser.email : 'NULL',
+      path: `wardens/${wardenId}`
+    });
+
     const docRef = firestore.collection('wardens').doc(wardenId);
-    const docSnap = await docRef.get();
+    let docSnap;
+
+    try {
+      docSnap = await docRef.get();
+
+      console.log('[WARDEN_STEP_2_GET_SUCCESS]', {
+        exists: docSnap.exists,
+        id: docSnap.id,
+        data: docSnap.exists ? docSnap.data() : null
+      });
+    } catch (error) {
+      console.error('[WARDEN_STEP_2_GET_FAILED]', {
+        code: error.code,
+        message: error.message,
+        name: error.name,
+        path: `wardens/${wardenId}`
+      });
+      throw error;
+    }
 
     if (!docSnap.exists) {
       console.error('[WARDEN_NOT_FOUND]', wardenId);
@@ -1171,7 +1192,27 @@ async function updateWardenApprovalStatus(
       };
     }
 
-    await docRef.update(updateFields);
+    console.log('[WARDEN_STEP_3_BEFORE_UPDATE]', {
+      path: `wardens/${wardenId}`,
+      updateFields
+    });
+
+    try {
+      await docRef.update(updateFields);
+
+      console.log('[WARDEN_STEP_4_UPDATE_SUCCESS]', {
+        path: `wardens/${wardenId}`
+      });
+    } catch (error) {
+      console.error('[WARDEN_STEP_4_UPDATE_FAILED]', {
+        code: error.code,
+        message: error.message,
+        name: error.name,
+        path: `wardens/${wardenId}`,
+        updateFields
+      });
+      throw error;
+    }
 
     try {
       const cached = JSON.parse(localStorage.getItem('klsvdit_wardens_cache') || '[]');
