@@ -309,11 +309,7 @@ service cloud.firestore {
        * Client must query using:
        * where("hostelUnit", "==", currentHostelUnit)
        */
-      allow list: if isAuthenticated() &&
-        (
-          isWarden() ||
-          isIncharge()
-        );
+      allow list: if isAuthenticated();
 
 
       allow create: if isAuthenticated() &&

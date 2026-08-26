@@ -343,10 +343,31 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
   const inputSemester = semester ? semester.trim() : '';
   const dobVal = dateOfBirth ? dateOfBirth.trim() : '';
 
+  // 1. Ensure authenticated session (via Anonymous Auth or existing session) BEFORE querying Firestore
+  if (typeof firebase !== 'undefined' && firebase.auth && !firebase.auth().currentUser) {
+    try {
+      await firebase.auth().signInAnonymously();
+    } catch (e) {
+      if (e && e.code !== 'auth/admin-restricted-operation') {
+        console.warn('Student anonymous auth note:', e.message || e);
+      }
+    }
+  }
+
+  const currentAuthUser = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth().currentUser : null;
+
+  console.log('[STUDENT_LOOKUP_START]', {
+    normalizedUsn,
+    inputCourse,
+    inputSemester,
+    isAuthenticated: !!currentAuthUser,
+    authUid: currentAuthUser ? currentAuthUser.uid : null
+  });
+
   let studentProfile = null;
   const firestore = getFirebaseDb();
 
-  // 1. Try Firestore query by USN
+  // 2. Query Cloud Firestore by USN now that session is authenticated
   if (firestore) {
     try {
       let snapshot = await firestore.collection('students')
@@ -365,10 +386,15 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
       }
     } catch (err) {
       console.warn('Firestore student lookup note:', err.message);
+      console.log('[STUDENT_LOOKUP_FIRESTORE_ERROR]', {
+        code: err && err.code,
+        message: err && err.message,
+        normalizedUsn
+      });
     }
   }
 
-  // 2. Try Local Storage cache lookup
+  // 3. Local Storage cache lookup fallback
   if (!studentProfile) {
     try {
       const cached = JSON.parse(localStorage.getItem('klsvdit_students_cache') || '[]');
@@ -377,30 +403,37 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
     } catch (e) {}
   }
 
-  // 3. UNREGISTERED STUDENT REJECTION
+  console.log('[STUDENT_LOOKUP_RESULT]', {
+    normalizedUsn,
+    foundInCloud: !!studentProfile && !studentProfile.storage,
+    foundInLocal: !!studentProfile && studentProfile.storage === 'local',
+    docId: studentProfile ? studentProfile.id : null
+  });
+
+  // 4. UNREGISTERED STUDENT REJECTION
   if (!studentProfile) {
     throw new Error('USN not registered with Warden. Please contact your Hostel Warden.');
   }
 
-  // 4. INACTIVE ACCOUNT REJECTION
+  // 5. INACTIVE ACCOUNT REJECTION
   const status = (studentProfile.status || 'active').toLowerCase();
   if (status === 'inactive' || status === 'rejected' || studentProfile.isActive === false) {
     throw new Error('Your student account is currently inactive. Please contact your Hostel Warden.');
   }
 
-  // 5. COURSE MATCH CHECK
+  // 6. COURSE MATCH CHECK
   const regCourse = studentProfile.course || studentProfile.branch || '';
   if (!regCourse || !isCourseMatch(inputCourse, regCourse)) {
     throw new Error('Registration details mismatch: Course does not match registered details. Please contact your Warden.');
   }
 
-  // 6. SEMESTER MATCH CHECK
+  // 7. SEMESTER MATCH CHECK
   const regSem = studentProfile.semester || studentProfile.sem || '';
   if (!regSem || !isSemesterMatch(inputSemester, regSem)) {
     throw new Error('Registration details mismatch: Semester does not match registered details. Please contact your Warden.');
   }
 
-  // 7. DATE OF BIRTH MATCH CHECK
+  // 8. DATE OF BIRTH MATCH CHECK
   const regDob = studentProfile.dateOfBirth || studentProfile.dob || studentProfile.birthDate || '';
   if (!regDob || !isDobMatch(dobVal, regDob)) {
     throw new Error('Registration details mismatch: Date of Birth does not match registered details. Please contact your Warden.');
@@ -409,18 +442,8 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
   const cleanUnit = (studentProfile.hostelUnit || studentProfile.hostelType || 'boys').toLowerCase();
   studentProfile.hostelType = cleanUnit;
   studentProfile.hostelUnit = cleanUnit;
-
-  if (typeof firebase !== 'undefined' && firebase.auth && !firebase.auth().currentUser) {
-    try {
-      const userCred = await firebase.auth().signInAnonymously();
-      if (userCred && userCred.user) {
-        studentProfile.authUid = userCred.user.uid;
-      }
-    } catch (e) {
-      if (e && e.code !== 'auth/admin-restricted-operation') {
-        console.warn('Student anonymous auth note:', e.message || e);
-      }
-    }
+  if (currentAuthUser) {
+    studentProfile.authUid = currentAuthUser.uid;
   }
 
   setStudentSession(studentProfile);
