@@ -340,12 +340,20 @@ service cloud.firestore {
 
           (
             isWarden() &&
-            resource.data.hostelUnit == getHostelUnit()
+            (
+              resource.data.hostelUnit == getHostelUnit() ||
+              resource.data.hostelType == getHostelUnit() ||
+              resource.data.hosteltype == getHostelUnit()
+            )
           ) ||
 
           (
             isIncharge() &&
-            resource.data.hostelUnit == getHostelUnit()
+            (
+              resource.data.hostelUnit == getHostelUnit() ||
+              resource.data.hostelType == getHostelUnit() ||
+              resource.data.hosteltype == getHostelUnit()
+            )
           )
         );
 
