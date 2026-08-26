@@ -402,15 +402,26 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
         const data = targetDoc.data();
         studentProfile = { id: targetDoc.id, ...data };
 
-        // Save authUid to the student document in Cloud Firestore
-        if (currentAuthUser && currentAuthUser.uid) {
+        const existingAuthUid = data.authUid;
+        const currentUid = currentAuthUser ? currentAuthUser.uid : null;
+
+        // Verify account ownership if authUid is already bound
+        if (existingAuthUid && currentUid && existingAuthUid !== currentUid) {
+          if (currentAuthUser) {
+            try { await firebaseAuth.signOut(); } catch (e) {}
+          }
+          throw new Error('Account ownership mismatch: This student account is bound to another user session. Please contact your Hostel Warden.');
+        }
+
+        // Save authUid to the student document in Cloud Firestore if not already bound
+        if (!existingAuthUid && currentUid) {
           try {
             await firestore.collection('students').doc(targetDoc.id).set({
-              authUid: currentAuthUser.uid,
+              authUid: currentUid,
               email: studentAuthEmail,
               updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             }, { merge: true });
-            studentProfile.authUid = currentAuthUser.uid;
+            studentProfile.authUid = currentUid;
           } catch (syncErr) {
             console.warn('Student authUid sync note:', syncErr.message);
           }
