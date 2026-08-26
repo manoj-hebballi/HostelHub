@@ -347,6 +347,40 @@ service cloud.firestore {
           request.auth.uid == wardenId ||
 
           (
+            resource != null &&
+            request.auth.token.email != null &&
+            request.auth.token.email == 'incharge.boys@klsvdit.ac.in' &&
+            (
+              resource.data.hostelUnit == 'boys' ||
+              resource.data.hostelType == 'boys' ||
+              resource.data.hosteltype == 'boys'
+            )
+          ) ||
+
+          (
+            resource != null &&
+            request.auth.token.email != null &&
+            request.auth.token.email == 'incharge.girls1@klsvdit.ac.in' &&
+            (
+              resource.data.hostelUnit == 'girls1' ||
+              resource.data.hostelType == 'girls1' ||
+              resource.data.hosteltype == 'girls1'
+            )
+          ) ||
+
+          (
+            resource != null &&
+            request.auth.token.email != null &&
+            request.auth.token.email == 'incharge.girls2@klsvdit.ac.in' &&
+            (
+              resource.data.hostelUnit == 'girls2' ||
+              resource.data.hostelType == 'girls2' ||
+              resource.data.hosteltype == 'girls2'
+            )
+          ) ||
+
+          (
+            resource != null &&
             isIncharge() &&
             (
               resource.data.hostelUnit == getHostelUnit() ||
@@ -356,6 +390,7 @@ service cloud.firestore {
           ) ||
 
           (
+            resource != null &&
             isWarden() &&
             (
               resource.data.hostelUnit == getHostelUnit() ||
