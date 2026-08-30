@@ -135,20 +135,16 @@ service cloud.firestore {
 
 
     /* =========================================================
-       HOSTEL UNIT (ZERO REPEATED LOOKUPS)
+       HOSTEL UNIT (ZERO REPEATED LOOKUPS & SAFE MAP ACCESS)
        ========================================================= */
 
     function getHostelUnit() {
       return !isAuthenticated()
         ? 'none'
-        : request.auth.token.hostelUnit != null
+        : request.auth.token.keys().hasAny(['hostelUnit'])
           ? request.auth.token.hostelUnit
-        : getCallerData() != null && getCallerData().hostelUnit != null
-          ? getCallerData().hostelUnit
-        : getCallerData() != null && getCallerData().hostelType != null
-          ? getCallerData().hostelType
-        : getCallerData() != null && getCallerData().hosteltype != null
-          ? getCallerData().hosteltype
+        : getCallerData() != null
+          ? getCallerData().get('hostelUnit', getCallerData().get('hostelType', getCallerData().get('hosteltype', 'none')))
         : 'none';
     }
 
@@ -201,36 +197,28 @@ service cloud.firestore {
 
           (
             resource != null &&
-            resource.data.authUid != null &&
-            resource.data.authUid == request.auth.uid
+            resource.data.get('authUid', '') == request.auth.uid
           ) ||
 
           (
             resource != null &&
-            resource.data.email != null &&
             request.auth.token.email != null &&
-            resource.data.email == request.auth.token.email
+            resource.data.get('email', '') == request.auth.token.email
           ) ||
 
           (
             isWarden() &&
             (
-              resource == null ||
-              resource.data.hostelUnit == getHostelUnit() ||
-              resource.data.hostelType == getHostelUnit() ||
-              resource.data.hosteltype == getHostelUnit() ||
-              getHostelUnit() == 'all'
+              getHostelUnit() == 'all' ||
+              (resource != null && resource.data.get('hostelUnit', resource.data.get('hostelType', resource.data.get('hosteltype', ''))) == getHostelUnit())
             )
           ) ||
 
           (
             isIncharge() &&
             (
-              resource == null ||
-              resource.data.hostelUnit == getHostelUnit() ||
-              resource.data.hostelType == getHostelUnit() ||
-              resource.data.hosteltype == getHostelUnit() ||
-              getHostelUnit() == 'all'
+              getHostelUnit() == 'all' ||
+              (resource != null && resource.data.get('hostelUnit', resource.data.get('hostelType', resource.data.get('hosteltype', ''))) == getHostelUnit())
             )
           )
         );
