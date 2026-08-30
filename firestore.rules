@@ -475,6 +475,7 @@ service cloud.firestore {
       allow create: if isAuthenticated() &&
         (
           isWarden() ||
+          isIncharge() ||
           isSecurity()
         );
 

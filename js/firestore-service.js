@@ -294,9 +294,12 @@ async function addStudent(data, wardenHostelType) {
     throw new Error('Cloud Firestore is not initialized. Cannot register student.');
   }
 
+  const studentEmail = `${normalizedUsn.toLowerCase()}@student.klsvdit.ac.in`;
+
   const studentPayload = {
     name: data.name.trim(),
     usn: normalizedUsn,
+    email: studentEmail,
     course: (data.course || 'BE').trim().toUpperCase(),
     branch: (data.course || 'BE').trim().toUpperCase(),
     semester: (data.semester || '5').toString().trim(),
