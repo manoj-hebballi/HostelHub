@@ -176,7 +176,7 @@ service cloud.firestore {
           getRole() == 'gate-security' ||
           getRole() == 'security' ||
           getRole() == 'Security' ||
-          (request.auth.token.email != null && (request.auth.token.email == 'security@college.edu' || request.auth.token.email.matches('.*security.*')))
+          (request.auth.token.email != null && (request.auth.token.email == 'security@college.edu' || request.auth.token.email.matches('.*security.*@klsvdit\\.ac\\.in')))
         );
     }
 
