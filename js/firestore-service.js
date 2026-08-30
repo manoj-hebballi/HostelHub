@@ -837,9 +837,39 @@ async function registerWardenAccount(
     'boys'
   );
 
-  const docId =
-    wardenData.id ||
-    `warden_${unit}_${Date.now()}`;
+  const cleanEmail = (wardenData.email || '').trim().toLowerCase();
+  const cleanPass = (wardenData.password || 'warden123').trim();
+  let authUid = wardenData.id || wardenData.uid || wardenData.authUid || null;
+
+  // 1. Provision Firebase Auth account via secondary app if possible to obtain real authUid
+  if (!authUid && cleanEmail && typeof firebase !== 'undefined' && firebase.initializeApp && firebase.app) {
+    let secondaryApp = null;
+    try {
+      const appName = `WardenProvisioningApp_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      secondaryApp = firebase.initializeApp(firebase.app().options, appName);
+      let userCred = null;
+      try {
+        userCred = await secondaryApp.auth().createUserWithEmailAndPassword(cleanEmail, cleanPass);
+      } catch (createErr) {
+        if (createErr.code === 'auth/email-already-in-use') {
+          try {
+            userCred = await secondaryApp.auth().signInWithEmailAndPassword(cleanEmail, cleanPass);
+          } catch (signInErr) {}
+        }
+      }
+      if (userCred && userCred.user) {
+        authUid = userCred.user.uid;
+      }
+    } catch (secErr) {
+      console.warn('Secondary app provisioning note:', secErr.message);
+    } finally {
+      if (secondaryApp) {
+        try { await secondaryApp.delete(); } catch (e) {}
+      }
+    }
+  }
+
+  const docId = authUid || (cleanEmail ? `warden_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}` : `warden_${unit}_${Date.now()}`);
 
   const isApproved =
     wardenData.status === 'approved' ||
@@ -966,6 +996,24 @@ async function registerWardenAccount(
       .collection('wardens')
       .doc(docId)
       .set(createPayload, { merge: true });
+
+    try {
+      await firestore
+        .collection('users')
+        .doc(docId)
+        .set({
+          role: 'warden',
+          hostelUnit: unit,
+          hostelType: unit,
+          email: createPayload.email,
+          name: createPayload.name,
+          status: createPayload.status,
+          isActive: createPayload.isActive,
+          updatedAt: getFieldValue().serverTimestamp()
+        }, { merge: true });
+    } catch (uErr) {
+      console.warn('User doc sync note during warden reg:', uErr.message);
+    }
 
     let localWardens =
       JSON.parse(
