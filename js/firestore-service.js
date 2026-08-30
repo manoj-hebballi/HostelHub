@@ -344,32 +344,19 @@ async function addStudent(data, wardenHostelType) {
     throw new Error(`Failed to write student record to Cloud Firestore: ${err.message || err.code}`);
   }
 
-  // 2. Read Back & Verify Document Existence (non-fatal if permission-denied)
+  // 2. Read Back & Verify Document Existence
   console.log('[STUDENT_REGISTER_VERIFY]', {
     docId,
     path: `students/${docId}`
   });
 
-  let verifiedData = studentPayload;
-  try {
-    const verifySnap = await firestore.collection('students').doc(docId).get();
-    if (verifySnap.exists) {
-      verifiedData = verifySnap.data();
-    } else {
-      console.warn('[STUDENT_REGISTER_VERIFY_NOT_FOUND]', { docId, usn: normalizedUsn });
-    }
-  } catch (verifyErr) {
-    // The write already succeeded above. If the read-back fails (e.g. permission-denied
-    // because getHostelUnit() in security rules cannot resolve the warden's hostel unit
-    // from wardens/{authUid} yet), treat it as a non-fatal warning.
-    console.warn('[STUDENT_REGISTER_VERIFY_SKIPPED]', {
-      code: verifyErr.code,
-      message: verifyErr.message,
-      docId,
-      usn: normalizedUsn,
-      note: 'Write succeeded but read-back was denied. Registration is still valid.'
-    });
+  const verifySnap = await firestore.collection('students').doc(docId).get();
+  if (!verifySnap.exists) {
+    console.error('[STUDENT_REGISTER_VERIFY_FAILED]', { docId, usn: normalizedUsn });
+    throw new Error(`Cloud Firestore read-back verification failed: Document students/${docId} was not found after write.`);
   }
+
+  const verifiedData = verifySnap.data();
 
   console.log('[STUDENT_REGISTER_RESULT]', {
     success: true,
@@ -3946,43 +3933,58 @@ async function createMarketPass(studentProfile, extra = {}) {
 }
 
 async function getMarketPassByToken(tokenStr) {
-  const token = (tokenStr || '').trim();
+  let token = (tokenStr || '').trim();
   if (!token) return null;
 
+  if (token.startsWith('{') && token.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(token);
+      token = parsed.qrToken || parsed.passToken || parsed.token || parsed.passId || parsed.id || token;
+    } catch (e) {}
+  }
+  token = token.trim();
+  const tokenUpper = token.toUpperCase();
+
   try {
-   const firestore = getDb();
-   if (!firestore) {
-     const cached = JSON.parse(localStorage.getItem('klsvdit_market_passes') || '[]');
-     return cached.find(pass => 
-       (pass.qrToken || '').toUpperCase() === token.toUpperCase() ||
-       (pass.id || '').toUpperCase() === token.toUpperCase() ||
-       (pass.passToken || '').toUpperCase() === token.toUpperCase()
-     ) || null;
-   }
+    const firestore = getDb();
+    if (!firestore) {
+      const cached = JSON.parse(localStorage.getItem('klsvdit_market_passes') || '[]');
+      return cached.find(pass => 
+        (pass.qrToken || '').toUpperCase() === tokenUpper ||
+        (pass.id || '').toUpperCase() === tokenUpper ||
+        (pass.passToken || '').toUpperCase() === tokenUpper
+      ) || null;
+    }
 
-   const directDoc = await firestore.collection('marketPasses').doc(token).get();
-   if (directDoc.exists) {
-     return { id: directDoc.id, ...directDoc.data() };
-   }
+    const directDoc = await firestore.collection('marketPasses').doc(token).get();
+    if (directDoc.exists) {
+      return { id: directDoc.id, ...directDoc.data() };
+    }
 
-   let snap = await firestore.collection('marketPasses').where('qrToken', '==', token).limit(1).get();
-   if (snap.empty) {
-     snap = await firestore.collection('marketPasses').where('passToken', '==', token).limit(1).get();
-   }
-   if (snap.empty) return null;
-   const doc = snap.docs[0];
-   return { id: doc.id, ...doc.data() };
+    let snap = await firestore.collection('marketPasses').where('qrToken', '==', token).limit(1).get();
+    if (snap.empty && token !== tokenUpper) {
+      snap = await firestore.collection('marketPasses').where('qrToken', '==', tokenUpper).limit(1).get();
+    }
+    if (snap.empty) {
+      snap = await firestore.collection('marketPasses').where('passToken', '==', token).limit(1).get();
+    }
+    if (snap.empty && token !== tokenUpper) {
+      snap = await firestore.collection('marketPasses').where('passToken', '==', tokenUpper).limit(1).get();
+    }
+    if (snap.empty) return null;
+    const doc = snap.docs[0];
+    return { id: doc.id, ...doc.data() };
   } catch (err) {
-   if (isFirestoreFallbackError(err)) {
-     const cached = JSON.parse(localStorage.getItem('klsvdit_market_passes') || '[]');
-     return cached.find(pass => 
-       (pass.qrToken || '').toUpperCase() === token.toUpperCase() ||
-       (pass.id || '').toUpperCase() === token.toUpperCase() ||
-       (pass.passToken || '').toUpperCase() === token.toUpperCase()
-     ) || null;
-   }
-   console.error('Market pass lookup error:', err);
-   return null;
+    if (isFirestoreFallbackError(err)) {
+      const cached = JSON.parse(localStorage.getItem('klsvdit_market_passes') || '[]');
+      return cached.find(pass => 
+        (pass.qrToken || '').toUpperCase() === tokenUpper ||
+        (pass.id || '').toUpperCase() === tokenUpper ||
+        (pass.passToken || '').toUpperCase() === tokenUpper
+      ) || null;
+    }
+    console.error('Market pass lookup error:', err);
+    return null;
   }
 }
 
