@@ -40,71 +40,31 @@ service cloud.firestore {
 
 
     /* =========================================================
-       USER DOCUMENT
+       CONSOLIDATED CALLER DATA (1 SINGLE LOOKUP PATH)
        ========================================================= */
 
-    function hasUserDoc() {
-      return isAuthenticated() &&
-        exists(
-          /databases/$(database)/documents/users/$(request.auth.uid)
-        );
-    }
-
-    function getUserData() {
-      return get(
-        /databases/$(database)/documents/users/$(request.auth.uid)
-      ).data;
+    function getCallerData() {
+      return !isAuthenticated()
+        ? null
+        : exists(/databases/$(database)/documents/users/$(request.auth.uid))
+          ? get(/databases/$(database)/documents/users/$(request.auth.uid)).data
+          : exists(/databases/$(database)/documents/wardens/$(request.auth.uid))
+            ? get(/databases/$(database)/documents/wardens/$(request.auth.uid)).data
+            : exists(/databases/$(database)/documents/incharges/$(request.auth.uid))
+              ? get(/databases/$(database)/documents/incharges/$(request.auth.uid)).data
+              : null;
     }
 
 
     /* =========================================================
-       WARDEN DOCUMENT
-       ========================================================= */
-
-    function hasWardenDoc() {
-      return isAuthenticated() &&
-        exists(
-          /databases/$(database)/documents/wardens/$(request.auth.uid)
-        );
-    }
-
-    function getWardenData() {
-      return get(
-        /databases/$(database)/documents/wardens/$(request.auth.uid)
-      ).data;
-    }
-
-
-    /* =========================================================
-       INCHARGE DOCUMENT
-       ========================================================= */
-
-    function hasInchargeDoc() {
-      return isAuthenticated() &&
-        exists(
-          /databases/$(database)/documents/incharges/$(request.auth.uid)
-        );
-    }
-
-    function getInchargeData() {
-      return get(
-        /databases/$(database)/documents/incharges/$(request.auth.uid)
-      ).data;
-    }
-
-
-    /* =========================================================
-       ROLE RESOLUTION
+       ROLE RESOLUTION (ZERO REPEATED LOOKUPS)
        ========================================================= */
 
     function getRole() {
-
       return !isAuthenticated()
         ? 'anonymous'
-
         : request.auth.token.role != null
           ? request.auth.token.role
-
         : request.auth.token.email != null &&
           (
             request.auth.token.email == 'incharge.boys@klsvdit.ac.in' ||
@@ -112,24 +72,17 @@ service cloud.firestore {
             request.auth.token.email == 'incharge.girls2@klsvdit.ac.in'
           )
           ? 'incharge'
-
-        : hasInchargeDoc()
-          ? 'incharge'
-
-        : hasWardenDoc()
-          ? 'warden'
-
-        : hasUserDoc() && getUserData().role != null
-          ? getUserData().role
-
+        : request.auth.token.email != null &&
+          request.auth.token.email.matches('.*security.*@klsvdit\\.ac\\.in')
+          ? 'gateSecurity'
+        : getCallerData() != null && getCallerData().role != null
+          ? getCallerData().role
         : 'anonymous';
     }
 
 
     /* =========================================================
        ROLE CHECKS
-
-       Supports common capitalization variants.
        ========================================================= */
 
     function isStudent() {
@@ -145,8 +98,6 @@ service cloud.firestore {
         (
           getRole() == 'warden' ||
           getRole() == 'Warden' ||
-          hasWardenDoc() ||
-          (hasUserDoc() && (getUserData().role == 'warden' || getUserData().role == 'Warden')) ||
           (request.auth.token.email != null && request.auth.token.email.matches('.*warden.*'))
         );
     }
@@ -182,7 +133,7 @@ service cloud.firestore {
 
 
     /* =========================================================
-       HOSTEL UNIT
+       HOSTEL UNIT (ZERO REPEATED LOOKUPS)
        ========================================================= */
 
     function getHostelUnit() {
@@ -190,24 +141,12 @@ service cloud.firestore {
         ? 'none'
         : request.auth.token.hostelUnit != null
           ? request.auth.token.hostelUnit
-        : hasWardenDoc() && getWardenData().hostelUnit != null
-          ? getWardenData().hostelUnit
-        : hasWardenDoc() && getWardenData().hostelType != null
-          ? getWardenData().hostelType
-        : hasWardenDoc() && getWardenData().hosteltype != null
-          ? getWardenData().hosteltype
-        : hasInchargeDoc() && getInchargeData().hostelUnit != null
-          ? getInchargeData().hostelUnit
-        : hasInchargeDoc() && getInchargeData().hostelType != null
-          ? getInchargeData().hostelType
-        : hasInchargeDoc() && getInchargeData().hosteltype != null
-          ? getInchargeData().hosteltype
-        : hasUserDoc() && getUserData().hostelUnit != null
-          ? getUserData().hostelUnit
-        : hasUserDoc() && getUserData().hostelType != null
-          ? getUserData().hostelType
-        : hasUserDoc() && getUserData().hosteltype != null
-          ? getUserData().hosteltype
+        : getCallerData() != null && getCallerData().hostelUnit != null
+          ? getCallerData().hostelUnit
+        : getCallerData() != null && getCallerData().hostelType != null
+          ? getCallerData().hostelType
+        : getCallerData() != null && getCallerData().hosteltype != null
+          ? getCallerData().hosteltype
         : 'none';
     }
 
@@ -216,16 +155,6 @@ service cloud.firestore {
       return unit == 'boys' ||
              unit == 'girls1' ||
              unit == 'girls2';
-    }
-
-
-    /*
-     * Used mainly for individual document reads.
-     */
-    function sameHostel(unit) {
-      return isAuthenticated() &&
-        validHostelUnit(getHostelUnit()) &&
-        unit == getHostelUnit();
     }
 
 
