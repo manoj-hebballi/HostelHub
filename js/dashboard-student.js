@@ -21,15 +21,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  if (typeof firebase !== 'undefined' && firebase.auth && !firebase.auth().currentUser) {
-    try {
-      await firebase.auth().signInAnonymously();
-    } catch (e) {
-      if (e && e.code !== 'auth/admin-restricted-operation') {
-        console.warn('Anonymous auth session note:', e.message || e);
-      }
-    }
-  }
+  // Auth session is restored from LOCAL persistence automatically.
+  // Do NOT call signInAnonymously() here — it would replace a real
+  // authenticated student's session on a second device where
+  // firebase.auth().currentUser hasn't restored yet from IndexedDB.
 
   if (typeof initBackButtonProtection === 'function') {
     initBackButtonProtection('student-login.html', getStudentSession);

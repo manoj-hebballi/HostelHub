@@ -303,7 +303,7 @@ function onQrCodeDetected(scannedData) {
   let token = scannedData;
   try {
     const parsed = JSON.parse(scannedData);
-    token = parsed.passToken || parsed.token || parsed.id || scannedData;
+    token = parsed.qrToken || parsed.passToken || parsed.token || parsed.passId || parsed.id || parsed.leaveRequestId || scannedData;
   } catch (e) {}
 
   const tokenInput = document.getElementById('passTokenInput');

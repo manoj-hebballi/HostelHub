@@ -361,7 +361,16 @@ service cloud.firestore {
       allow list: if isAuthenticated() &&
         (
           isWarden() ||
-          isIncharge()
+          isIncharge() ||
+          (
+            // Allow an authenticated user to query wardens by their own email
+            // so loginWarden() can discover the registration document
+            // (which has a timestamp-based ID, not authUid) on a new device.
+            resource != null &&
+            resource.data.email != null &&
+            request.auth.token.email != null &&
+            resource.data.email == request.auth.token.email
+          )
         );
 
 
