@@ -98,6 +98,7 @@ service cloud.firestore {
         (
           getRole() == 'warden' ||
           getRole() == 'Warden' ||
+          exists(/databases/$(database)/documents/wardens/$(request.auth.uid)) ||
           (request.auth.token.email != null && request.auth.token.email.matches('.*warden.*'))
         );
     }
@@ -115,7 +116,8 @@ service cloud.firestore {
           ) ||
           getRole() == 'incharge' ||
           getRole() == 'Incharge' ||
-          getRole() == 'inCharge'
+          getRole() == 'inCharge' ||
+          exists(/databases/$(database)/documents/incharges/$(request.auth.uid))
         );
     }
 
