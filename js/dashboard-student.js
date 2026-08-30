@@ -21,6 +21,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  const userRole = (currentStudentSession.role || 'student').toLowerCase();
+  const hasUsn = !!currentStudentSession.usn;
+  if (userRole !== 'student' && !hasUsn) {
+    alert('Access Denied: Student account required. Redirecting to Student Login...');
+    if (typeof clearStudentSession === 'function') clearStudentSession();
+    window.location.replace('student-login.html');
+    return;
+  }
+
   // Auth session is restored from LOCAL persistence automatically.
   // Do NOT call signInAnonymously() here — it would replace a real
   // authenticated student's session on a second device where

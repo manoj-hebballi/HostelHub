@@ -68,6 +68,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  const userRole = (currentWardenProfile.role || '').toLowerCase();
+  if (userRole !== 'warden') {
+    alert('Access Denied: Warden account required. Redirecting to Warden Login...');
+    if (typeof clearWardenSession === 'function') clearWardenSession();
+    window.location.replace('warden-login.html');
+    return;
+  }
+
   const effectiveHostelUnit = (currentWardenProfile.hostelUnit || currentWardenProfile.hostelType || 'boys').toLowerCase();
   currentWardenProfile.hostelUnit = effectiveHostelUnit;
   currentWardenProfile.hostelType = effectiveHostelUnit;

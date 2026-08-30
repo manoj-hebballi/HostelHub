@@ -24,31 +24,37 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 2. Active Firebase User Fallback
   const firebaseUser = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
   if (!currentIncharge && firebaseUser) {
-    const unit = typeof getHostelUnitFromEmail === 'function' ? getHostelUnitFromEmail(firebaseUser.email) : 'boys';
-    currentIncharge = {
-      id: firebaseUser.uid,
-      email: firebaseUser.email || '',
-      name: firebaseUser.displayName || `${unit === 'girls2' ? 'Girls Hostel 2' : unit === 'girls1' ? 'Girls Hostel 1' : 'Boys Hostel'} Incharge`,
-      hostelUnit: unit,
-      hostelType: unit,
-      role: 'incharge'
-    };
-    if (typeof setInchargeSession === 'function') setInchargeSession(currentIncharge);
+    const userEmail = (firebaseUser.email || '').toLowerCase();
+    const isOfficialIncharge = userEmail.startsWith('incharge.') && userEmail.endsWith('@klsvdit.ac.in');
+    if (isOfficialIncharge) {
+      const unit = typeof getHostelUnitFromEmail === 'function' ? getHostelUnitFromEmail(firebaseUser.email) : 'boys';
+      currentIncharge = {
+        id: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        name: firebaseUser.displayName || `${unit === 'girls2' ? 'Girls Hostel 2' : unit === 'girls1' ? 'Girls Hostel 1' : 'Boys Hostel'} Incharge`,
+        hostelUnit: unit,
+        hostelType: unit,
+        role: 'incharge'
+      };
+      if (typeof setInchargeSession === 'function') setInchargeSession(currentIncharge);
+    }
   }
 
-  // 3. Fallback: If redirected to dashboard, construct active unit incharge session
+  // 3. Strict Role Verification
   if (!currentIncharge) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const unitParam = urlParams.get('unit') || 'boys';
-    currentIncharge = {
-      id: 'inc_' + unitParam,
-      name: `${unitParam === 'girls2' ? 'Girls Hostel 2' : unitParam === 'girls1' ? 'Girls Hostel 1' : 'Boys Hostel'} Incharge`,
-      email: `incharge.${unitParam}@klsvdit.ac.in`,
-      hostelUnit: unitParam,
-      hostelType: unitParam,
-      role: 'incharge'
-    };
-    if (typeof setInchargeSession === 'function') setInchargeSession(currentIncharge);
+    window.location.replace('incharge-login.html');
+    return;
+  }
+
+  const userRole = (currentIncharge.role || '').toLowerCase();
+  const userEmail = (currentIncharge.email || '').toLowerCase();
+  const isOfficialInchargeEmail = userEmail.startsWith('incharge.') && userEmail.endsWith('@klsvdit.ac.in');
+
+  if (userRole !== 'incharge' && !isOfficialInchargeEmail) {
+    alert('Access Denied: Incharge account required. Redirecting to Incharge Login...');
+    if (typeof clearInchargeSession === 'function') clearInchargeSession();
+    window.location.replace('incharge-login.html');
+    return;
   }
 
   currentUnit = (currentIncharge ? (currentIncharge.hostelUnit || currentIncharge.hostelType || 'boys') : 'boys').toLowerCase();
