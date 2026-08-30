@@ -89,7 +89,8 @@ service cloud.firestore {
       return isAuthenticated() &&
         (
           getRole() == 'student' ||
-          getRole() == 'Student'
+          getRole() == 'Student' ||
+          (request.auth.token.email != null && request.auth.token.email.matches('.*@student\\.klsvdit\\.ac\\.in'))
         );
     }
 
@@ -244,7 +245,13 @@ service cloud.firestore {
       allow update: if isAuthenticated() &&
         (
           request.auth.uid == studentId ||
-          (resource != null && resource.data.authUid != null && resource.data.authUid == request.auth.uid) ||
+          (resource != null && resource.data.get('authUid', '') == request.auth.uid) ||
+          (
+            resource != null &&
+            resource.data.get('authUid', null) == null &&
+            request.auth.token.email != null &&
+            resource.data.get('email', '') == request.auth.token.email
+          ) ||
           isWarden() ||
           isIncharge()
         );
