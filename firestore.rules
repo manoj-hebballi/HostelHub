@@ -671,22 +671,70 @@ service cloud.firestore {
     match /complaints/{complaintId} {
 
       // Read complaint
-      allow get: if true;
+      allow get: if isAuthenticated() &&
+        (
+          (
+            isStudent() &&
+            (
+              resource.data.get('studentAuthUid', '') == request.auth.uid ||
+              resource.data.get('authUid', '') == request.auth.uid ||
+              (
+                request.auth.token.email != null &&
+                resource.data.get('usn', '') != '' &&
+                request.auth.token.email == resource.data.get('usn', '').lower() + '@student.klsvdit.ac.in'
+              )
+            )
+          ) ||
+          (
+            isWarden() &&
+            (
+              getHostelUnit() == 'all' ||
+              resource.data.get('hostelUnit', resource.data.get('hostelType', '')) == getHostelUnit()
+            )
+          ) ||
+          (
+            isIncharge() &&
+            (
+              getHostelUnit() == 'all' ||
+              resource.data.get('hostelUnit', resource.data.get('hostelType', '')) == getHostelUnit()
+            )
+          )
+        );
 
       // List complaints
-      allow list: if true;
+      allow list: if isAuthenticated() &&
+        (
+          isStudent() ||
+          isWarden() ||
+          isIncharge()
+        );
 
       // Student creates complaint
-      allow create: if
-        request.resource.data.usn != null &&
-        request.resource.data.studentName != null &&
-        request.resource.data.hostelUnit != null &&
-        request.resource.data.category != null &&
-        request.resource.data.description != null &&
-        request.resource.data.status == "submitted";
+      allow create: if isAuthenticated() &&
+        (
+          isStudent() ||
+          isWarden() ||
+          isIncharge()
+        );
 
       // Warden & Incharge update
-      allow update: if isAuthenticated();
+      allow update: if isAuthenticated() &&
+        (
+          (
+            isWarden() &&
+            (
+              getHostelUnit() == 'all' ||
+              resource.data.get('hostelUnit', resource.data.get('hostelType', '')) == getHostelUnit()
+            )
+          ) ||
+          (
+            isIncharge() &&
+            (
+              getHostelUnit() == 'all' ||
+              resource.data.get('hostelUnit', resource.data.get('hostelType', '')) == getHostelUnit()
+            )
+          )
+        );
 
       // Warden & Incharge delete
       allow delete: if isAuthenticated() &&
