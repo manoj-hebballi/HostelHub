@@ -1185,7 +1185,7 @@ async function updateWardenApprovalStatus(
     });
 
     try {
-      await docRef.update(updateFields);
+      await docRef.set(updateFields, { merge: true });
 
       console.log('[WARDEN_STEP_4_UPDATE_SUCCESS]', {
         path: `wardens/${wardenId}`

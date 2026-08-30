@@ -175,7 +175,8 @@ service cloud.firestore {
           getRole() == 'Gate Security' ||
           getRole() == 'gate-security' ||
           getRole() == 'security' ||
-          getRole() == 'Security'
+          getRole() == 'Security' ||
+          (request.auth.token.email != null && (request.auth.token.email == 'security@college.edu' || request.auth.token.email.matches('.*security.*')))
         );
     }
 
@@ -460,7 +461,15 @@ service cloud.firestore {
       /*
        * Warden/Incharge & Student dashboard queries.
        */
-      allow list: if isAuthenticated();
+      allow list: if isAuthenticated() &&
+        (
+          isWarden() ||
+          isIncharge() ||
+          (
+            resource != null &&
+            resource.data.studentAuthUid == request.auth.uid
+          )
+        );
 
 
       allow create: if isAuthenticated() &&
