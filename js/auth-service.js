@@ -501,16 +501,31 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
     throw new Error('Account ownership mismatch: This student account is bound to another user session. Please contact your Hostel Warden.');
   }
 
-  if (!existingAuthUid && currentUid && firestore) {
+  if (currentUid && firestore) {
     try {
-      await firestore.collection('students').doc(studentProfile.id).set({
-        authUid: currentUid,
+      if (!existingAuthUid) {
+        await firestore.collection('students').doc(studentProfile.id).set({
+          authUid: currentUid,
+          email: studentAuthEmail,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        studentProfile.authUid = currentUid;
+      }
+
+      // Synchronize role document to users/{currentUid}
+      await firestore.collection('users').doc(currentUid).set({
+        role: 'student',
+        usn: studentProfile.usn,
+        name: studentProfile.name,
         email: studentAuthEmail,
+        hostelUnit: (studentProfile.hostelUnit || studentProfile.hostelType || 'boys').toLowerCase(),
+        hostelType: (studentProfile.hostelUnit || studentProfile.hostelType || 'boys').toLowerCase(),
+        status: 'active',
+        isActive: true,
         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
       }, { merge: true });
-      studentProfile.authUid = currentUid;
     } catch (syncErr) {
-      console.warn('Student authUid sync note:', syncErr.message);
+      console.warn('Student users sync note:', syncErr.message);
     }
   }
 
