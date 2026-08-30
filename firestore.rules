@@ -189,7 +189,7 @@ service cloud.firestore {
         ? 'none'
         : request.auth.token.hostelUnit != null
           ? request.auth.token.hostelUnit
-        : request.auth.token.email != null && (request.auth.token.email == 'incharge.boys@klsvdit.ac.in' || request.auth.token.email.matches('.*boys.*'))
+        : request.auth.token.email != null && (request.auth.token.email == 'incharge.boys@klsvdit.ac.in' || request.auth.token.email.matches('.*boys.*') || request.auth.token.email.matches('.*warden.*'))
           ? 'boys'
         : request.auth.token.email != null && (request.auth.token.email == 'incharge.girls1@klsvdit.ac.in' || request.auth.token.email.matches('.*girls1.*'))
           ? 'girls1'
@@ -213,7 +213,7 @@ service cloud.firestore {
           ? getUserData().hostelType
         : hasUserDoc() && getUserData().hosteltype != null
           ? getUserData().hosteltype
-        : 'none';
+        : 'boys';
     }
 
 

@@ -347,7 +347,7 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
   const inputCourse = course ? course.trim() : '';
   const inputSemester = semester ? semester.trim() : '';
   const dobVal = dateOfBirth ? dateOfBirth.trim() : '';
-  const cleanDob = normalizeDateStr(dobVal);
+  const cleanDob = normalizeDateStr(dobVal) || dobVal;
 
   console.log('[STUDENT_LOOKUP_START]', {
     normalizedUsn,
@@ -356,88 +356,10 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
   });
 
   const studentAuthEmail = `${normalizedUsn.toLowerCase()}@student.klsvdit.ac.in`;
-  const primaryPass = cleanDob || dobVal;
-
-  const passCandidates = [
-    primaryPass,
-    dobVal,
-    cleanDob,
-    dobVal.replace(/\D/g, ''),
-    `KLS_${normalizedUsn}_2026!`
-  ].filter(Boolean);
-  const uniquePasses = [...new Set(passCandidates)];
-
-  // 1. Authenticate with Firebase Email/Password Auth FIRST
-  let userCredential = null;
-  let authError = null;
-
-  if (firebaseAuth) {
-    if (firebaseAuth.currentUser) {
-      try { await firebaseAuth.signOut(); } catch (e) {}
-    }
-
-    for (const passCandidate of uniquePasses) {
-      try {
-        userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, passCandidate);
-        authError = null;
-        console.log('[STUDENT_AUTH_SUCCESS]', {
-          email: studentAuthEmail,
-          uid: userCredential.user ? userCredential.user.uid : null
-        });
-        break;
-      } catch (err) {
-        authError = err;
-        if (err.code === 'auth/user-not-found') {
-          break;
-        }
-      }
-    }
-
-    if (!userCredential && (authError?.code === 'auth/user-not-found' || authError?.code === 'auth/invalid-credential')) {
-      console.log('[STUDENT_AUTH_SIGNIN_ERROR]', {
-        code: authError?.code,
-        message: authError?.message,
-        usn: normalizedUsn,
-        email: studentAuthEmail
-      });
-
-      try {
-        userCredential = await firebaseAuth.createUserWithEmailAndPassword(studentAuthEmail, primaryPass);
-        authError = null;
-        console.log('[STUDENT_AUTH_SUCCESS]', {
-          email: studentAuthEmail,
-          uid: userCredential.user ? userCredential.user.uid : null,
-          created: true
-        });
-      } catch (createErr) {
-        if (createErr.code === 'auth/email-already-in-use') {
-          console.log('[STUDENT_AUTH_ACCOUNT_EXISTS]', {
-            email: studentAuthEmail
-          });
-          // Attempt sign-in with any pass candidate as fallback
-          for (const passCandidate of uniquePasses) {
-            try {
-              userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, passCandidate);
-              authError = null;
-              break;
-            } catch (e) {}
-          }
-          if (!userCredential) {
-            throw new Error('Firebase Auth credential invalid: Student account exists in Auth but password does not match registered DOB. Please contact your Hostel Warden.');
-          }
-        } else {
-          authError = createErr;
-        }
-      }
-    }
-  }
-
-  const currentAuthUser = firebaseAuth ? firebaseAuth.currentUser : null;
-
   let studentProfile = null;
   const firestore = getFirebaseDb();
 
-  // 2. Query Cloud Firestore by USN
+  // 1. Query Cloud Firestore FIRST by USN
   if (firestore) {
     try {
       let snapshot = await firestore.collection('students')
@@ -461,31 +383,6 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
           usn: data.usn,
           hostelUnit: data.hostelUnit
         });
-
-        const existingAuthUid = data.authUid;
-        const currentUid = currentAuthUser ? currentAuthUser.uid : null;
-
-        // Verify account ownership if authUid is already bound
-        if (existingAuthUid && currentUid && existingAuthUid !== currentUid) {
-          if (currentAuthUser) {
-            try { await firebaseAuth.signOut(); } catch (e) {}
-          }
-          throw new Error('Account ownership mismatch: This student account is bound to another user session. Please contact your Hostel Warden.');
-        }
-
-        // Save authUid to the student document in Cloud Firestore if not already bound
-        if (!existingAuthUid && currentUid) {
-          try {
-            await firestore.collection('students').doc(targetDoc.id).set({
-              authUid: currentUid,
-              email: studentAuthEmail,
-              updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }, { merge: true });
-            studentProfile.authUid = currentUid;
-          } catch (syncErr) {
-            console.warn('Student authUid sync note:', syncErr.message);
-          }
-        }
       } else {
         console.log('[STUDENT_LOOKUP_FIRESTORE_RESULT]', { found: false, usn: normalizedUsn });
       }
@@ -494,7 +391,7 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
     }
   }
 
-  // 3. Local Storage cache lookup fallback (if offline)
+  // Local Storage cache lookup fallback (if offline)
   if (!studentProfile) {
     try {
       const cached = JSON.parse(localStorage.getItem('klsvdit_students_cache') || '[]');
@@ -503,24 +400,18 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
     } catch (e) {}
   }
 
-  // 4. UNREGISTERED STUDENT REJECTION
+  // 2. UNREGISTERED STUDENT REJECTION
   if (!studentProfile) {
-    if (currentAuthUser) {
-      try { await firebaseAuth.signOut(); } catch (e) {}
-    }
     throw new Error('USN not registered with Warden. Please contact your Hostel Warden.');
   }
 
-  // 5. INACTIVE ACCOUNT REJECTION
+  // 3. INACTIVE ACCOUNT REJECTION
   const status = (studentProfile.status || 'active').toLowerCase();
   if (status === 'inactive' || status === 'rejected' || studentProfile.isActive === false) {
-    if (currentAuthUser) {
-      try { await firebaseAuth.signOut(); } catch (e) {}
-    }
     throw new Error('Your student account is currently inactive. Please contact your Hostel Warden.');
   }
 
-  // 6. COURSE MATCH CHECK
+  // 4. COURSE MATCH CHECK
   const regCourse = studentProfile.course || studentProfile.branch || '';
   const regSem = studentProfile.semester || studentProfile.sem || '';
   const regDob = studentProfile.dateOfBirth || studentProfile.dob || studentProfile.birthDate || '';
@@ -541,26 +432,86 @@ async function lookupStudent(usn, course, semester, dateOfBirth) {
   });
 
   if (!regCourse || !isCourseMatch(inputCourse, regCourse)) {
-    if (currentAuthUser) {
-      try { await firebaseAuth.signOut(); } catch (e) {}
-    }
     throw new Error('Registration details mismatch: Course does not match registered details. Please contact your Warden.');
   }
 
-  // 7. SEMESTER MATCH CHECK
+  // 5. SEMESTER MATCH CHECK
   if (!regSem || !isSemesterMatch(inputSemester, regSem)) {
-    if (currentAuthUser) {
-      try { await firebaseAuth.signOut(); } catch (e) {}
-    }
     throw new Error('Registration details mismatch: Semester does not match registered details. Please contact your Warden.');
   }
 
-  // 8. DATE OF BIRTH MATCH CHECK
+  // 6. DATE OF BIRTH MATCH CHECK
   if (!regDob || !isDobMatch(dobVal, regDob)) {
+    throw new Error('Registration details mismatch: Date of Birth does not match registered details. Please contact your Warden.');
+  }
+
+  // 7. FIREBASE AUTHENTICATION WITH CANONICAL DOB PASSWORD
+  let userCredential = null;
+  if (firebaseAuth) {
+    if (firebaseAuth.currentUser) {
+      try { await firebaseAuth.signOut(); } catch (e) {}
+    }
+
+    try {
+      userCredential = await firebaseAuth.signInWithEmailAndPassword(studentAuthEmail, cleanDob);
+      console.log('[STUDENT_AUTH_SUCCESS]', {
+        email: studentAuthEmail,
+        uid: userCredential.user ? userCredential.user.uid : null
+      });
+    } catch (err) {
+      console.log('[STUDENT_AUTH_SIGNIN_ERROR]', {
+        code: err?.code,
+        message: err?.message,
+        usn: normalizedUsn,
+        email: studentAuthEmail
+      });
+
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        try {
+          userCredential = await firebaseAuth.createUserWithEmailAndPassword(studentAuthEmail, cleanDob);
+          console.log('[STUDENT_AUTH_SUCCESS]', {
+            email: studentAuthEmail,
+            uid: userCredential.user ? userCredential.user.uid : null,
+            created: true
+          });
+        } catch (createErr) {
+          if (createErr.code === 'auth/email-already-in-use') {
+            console.log('[STUDENT_AUTH_ACCOUNT_EXISTS]', { email: studentAuthEmail });
+            throw new Error('Firebase Auth credential invalid: Password for student account does not match registered DOB. Please ask your Warden to re-sync or reset your student Auth account.');
+          }
+          throw new Error('Student authentication failed: ' + (createErr.message || createErr.code));
+        }
+      } else if (err.code === 'auth/wrong-password') {
+        throw new Error('Firebase Auth credential invalid: Password for student account does not match registered DOB. Please ask your Warden to re-sync or reset your student Auth account.');
+      } else {
+        throw new Error('Student authentication failed: ' + (err.message || err.code));
+      }
+    }
+  }
+
+  const currentAuthUser = firebaseAuth ? firebaseAuth.currentUser : null;
+  const existingAuthUid = studentProfile.authUid;
+  const currentUid = currentAuthUser ? currentAuthUser.uid : null;
+
+  // 8. VERIFY ACCOUNT OWNERSHIP & BIND AUTH UID
+  if (existingAuthUid && currentUid && existingAuthUid !== currentUid) {
     if (currentAuthUser) {
       try { await firebaseAuth.signOut(); } catch (e) {}
     }
-    throw new Error('Registration details mismatch: Date of Birth does not match registered details. Please contact your Warden.');
+    throw new Error('Account ownership mismatch: This student account is bound to another user session. Please contact your Hostel Warden.');
+  }
+
+  if (!existingAuthUid && currentUid && firestore) {
+    try {
+      await firestore.collection('students').doc(studentProfile.id).set({
+        authUid: currentUid,
+        email: studentAuthEmail,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      studentProfile.authUid = currentUid;
+    } catch (syncErr) {
+      console.warn('Student authUid sync note:', syncErr.message);
+    }
   }
 
   const cleanUnit = (studentProfile.hostelUnit || studentProfile.hostelType || 'boys').toLowerCase();
