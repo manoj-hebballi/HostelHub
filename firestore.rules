@@ -189,31 +189,25 @@ service cloud.firestore {
         ? 'none'
         : request.auth.token.hostelUnit != null
           ? request.auth.token.hostelUnit
-        : request.auth.token.email != null && (request.auth.token.email == 'incharge.boys@klsvdit.ac.in' || request.auth.token.email.matches('.*boys.*') || request.auth.token.email.matches('.*warden.*'))
-          ? 'boys'
-        : request.auth.token.email != null && (request.auth.token.email == 'incharge.girls1@klsvdit.ac.in' || request.auth.token.email.matches('.*girls1.*'))
-          ? 'girls1'
-        : request.auth.token.email != null && (request.auth.token.email == 'incharge.girls2@klsvdit.ac.in' || request.auth.token.email.matches('.*girls2.*'))
-          ? 'girls2'
-        : hasInchargeDoc() && getInchargeData().hostelUnit != null
-          ? getInchargeData().hostelUnit
-        : hasInchargeDoc() && getInchargeData().hostelType != null
-          ? getInchargeData().hostelType
-        : hasInchargeDoc() && getInchargeData().hosteltype != null
-          ? getInchargeData().hosteltype
         : hasWardenDoc() && getWardenData().hostelUnit != null
           ? getWardenData().hostelUnit
         : hasWardenDoc() && getWardenData().hostelType != null
           ? getWardenData().hostelType
         : hasWardenDoc() && getWardenData().hosteltype != null
           ? getWardenData().hosteltype
+        : hasInchargeDoc() && getInchargeData().hostelUnit != null
+          ? getInchargeData().hostelUnit
+        : hasInchargeDoc() && getInchargeData().hostelType != null
+          ? getInchargeData().hostelType
+        : hasInchargeDoc() && getInchargeData().hosteltype != null
+          ? getInchargeData().hosteltype
         : hasUserDoc() && getUserData().hostelUnit != null
           ? getUserData().hostelUnit
         : hasUserDoc() && getUserData().hostelType != null
           ? getUserData().hostelType
         : hasUserDoc() && getUserData().hosteltype != null
           ? getUserData().hosteltype
-        : 'boys';
+        : 'none';
     }
 
 
@@ -349,57 +343,15 @@ service cloud.firestore {
       allow get: if isAuthenticated() &&
         (
           request.auth.uid == wardenId ||
-
-          (
-            resource != null &&
-            request.auth.token.email != null &&
-            request.auth.token.email == 'incharge.boys@klsvdit.ac.in' &&
-            (
-              resource.data.hostelUnit == 'boys' ||
-              resource.data.hostelType == 'boys' ||
-              resource.data.hosteltype == 'boys'
-            )
-          ) ||
-
-          (
-            resource != null &&
-            request.auth.token.email != null &&
-            request.auth.token.email == 'incharge.girls1@klsvdit.ac.in' &&
-            (
-              resource.data.hostelUnit == 'girls1' ||
-              resource.data.hostelType == 'girls1' ||
-              resource.data.hosteltype == 'girls1'
-            )
-          ) ||
-
-          (
-            resource != null &&
-            request.auth.token.email != null &&
-            request.auth.token.email == 'incharge.girls2@klsvdit.ac.in' &&
-            (
-              resource.data.hostelUnit == 'girls2' ||
-              resource.data.hostelType == 'girls2' ||
-              resource.data.hosteltype == 'girls2'
-            )
-          ) ||
-
-          (
-            resource != null &&
-            isIncharge() &&
-            (
-              resource.data.hostelUnit == getHostelUnit() ||
-              resource.data.hostelType == getHostelUnit() ||
-              resource.data.hosteltype == getHostelUnit()
-            )
-          ) ||
-
+          isIncharge() ||
           (
             resource != null &&
             isWarden() &&
             (
               resource.data.hostelUnit == getHostelUnit() ||
               resource.data.hostelType == getHostelUnit() ||
-              resource.data.hosteltype == getHostelUnit()
+              resource.data.hosteltype == getHostelUnit() ||
+              getHostelUnit() == 'all'
             )
           )
         );
@@ -441,32 +393,6 @@ service cloud.firestore {
           (
             request.resource.data.role == 'warden' ||
             request.resource.data.role == 'Warden'
-          ) &&
-          (
-            (
-              request.auth.token.email == 'incharge.boys@klsvdit.ac.in' &&
-              (
-                request.resource.data.hostelUnit == 'boys' ||
-                request.resource.data.hostelType == 'boys' ||
-                request.resource.data.hosteltype == 'boys'
-              )
-            ) ||
-            (
-              request.auth.token.email == 'incharge.girls1@klsvdit.ac.in' &&
-              (
-                request.resource.data.hostelUnit == 'girls1' ||
-                request.resource.data.hostelType == 'girls1' ||
-                request.resource.data.hosteltype == 'girls1'
-              )
-            ) ||
-            (
-              request.auth.token.email == 'incharge.girls2@klsvdit.ac.in' &&
-              (
-                request.resource.data.hostelUnit == 'girls2' ||
-                request.resource.data.hostelType == 'girls2' ||
-                request.resource.data.hosteltype == 'girls2'
-              )
-            )
           )
         );
 
@@ -474,48 +400,22 @@ service cloud.firestore {
       allow update: if isAuthenticated() &&
         (
           request.auth.uid == wardenId ||
-
+          isIncharge() ||
           (
             resource != null &&
-            request.auth.token.email != null &&
-            (
-              (
-                request.auth.token.email == 'incharge.boys@klsvdit.ac.in' &&
-                (
-                  resource.data.hostelUnit == 'boys' ||
-                  resource.data.hostelType == 'boys' ||
-                  resource.data.hosteltype == 'boys'
-                )
-              ) ||
-              (
-                request.auth.token.email == 'incharge.girls1@klsvdit.ac.in' &&
-                (
-                  resource.data.hostelUnit == 'girls1' ||
-                  resource.data.hostelType == 'girls1' ||
-                  resource.data.hosteltype == 'girls1'
-                )
-              ) ||
-              (
-                request.auth.token.email == 'incharge.girls2@klsvdit.ac.in' &&
-                (
-                  resource.data.hostelUnit == 'girls2' ||
-                  resource.data.hostelType == 'girls2' ||
-                  resource.data.hosteltype == 'girls2'
-                )
-              )
-            )
-          ) ||
-
-          (
-            resource != null &&
-            isIncharge() &&
+            isWarden() &&
             (
               resource.data.hostelUnit == getHostelUnit() ||
               resource.data.hostelType == getHostelUnit() ||
-              resource.data.hosteltype == getHostelUnit()
+              resource.data.hosteltype == getHostelUnit() ||
+              getHostelUnit() == 'all'
             )
           )
         );
+
+
+      allow delete: if isIncharge();
+    }
 
 
       allow delete: if isIncharge();
@@ -1130,4 +1030,3 @@ service cloud.firestore {
        ========================================================= */
 
   }
-}
