@@ -3478,8 +3478,16 @@ async function createGatePass(
 
 
 async function getGatePassByToken(tokenOrId) {
-  const clean = (tokenOrId || '').trim();
+  let clean = (tokenOrId || '').trim();
   if (!clean) return null;
+
+  if (clean.startsWith('{') && clean.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(clean);
+      clean = parsed.passToken || parsed.token || parsed.passId || parsed.id || parsed.leaveRequestId || clean;
+    } catch (e) {}
+  }
+  clean = clean.trim();
   const cleanUpper = clean.toUpperCase();
 
   const getFromCache = () => {

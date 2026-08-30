@@ -460,12 +460,7 @@ service cloud.firestore {
       /*
        * Warden/Incharge & Student dashboard queries.
        */
-      allow list: if isAuthenticated() &&
-        (
-          isWarden() ||
-          isIncharge() ||
-          resource.data.studentAuthUid == request.auth.uid
-        );
+      allow list: if isAuthenticated();
 
 
       allow create: if isAuthenticated() &&
@@ -816,30 +811,17 @@ service cloud.firestore {
       allow get: if isAuthenticated() &&
         (
           resource.data.hostelUnit == 'all' ||
-
+          resource.data.hostelType == 'all' ||
+          getHostelUnit() == 'all' ||
           (
-            isWarden() &&
-            resource.data.hostelUnit == getHostelUnit()
-          ) ||
-
-          (
-            isIncharge() &&
-            resource.data.hostelUnit == getHostelUnit()
-          ) ||
-
-          (
-            isStudent() &&
-            resource.data.hostelUnit == getHostelUnit()
+            resource.data.hostelUnit == getHostelUnit() ||
+            resource.data.hostelType == getHostelUnit() ||
+            resource.data.hosteltype == getHostelUnit()
           )
         );
 
 
-      allow list: if isAuthenticated() &&
-        (
-          isStudent() ||
-          isWarden() ||
-          isIncharge()
-        );
+      allow list: if isAuthenticated();
 
 
       allow create: if isAuthenticated() &&
@@ -872,21 +854,17 @@ service cloud.firestore {
 
       allow get: if isAuthenticated() &&
         (
+          messId == getHostelUnit() ||
+          messId == 'all' ||
           resource.data.hostelUnit == 'all' ||
-
+          getHostelUnit() == 'all' ||
           (
-            isWarden() &&
-            resource.data.hostelUnit == getHostelUnit()
-          ) ||
-
-          (
-            isIncharge() &&
-            resource.data.hostelUnit == getHostelUnit()
-          ) ||
-
-          (
-            isStudent() &&
-            resource.data.hostelUnit == getHostelUnit()
+            resource != null &&
+            (
+              resource.data.hostelUnit == getHostelUnit() ||
+              resource.data.hostelType == getHostelUnit() ||
+              resource.data.hosteltype == getHostelUnit()
+            )
           )
         );
 
