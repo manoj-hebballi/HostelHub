@@ -680,9 +680,29 @@ p {
   /* Touch-friendly inputs and buttons */
   .form-input,
   .form-select,
-  .btn {
+  .search-input,
+  .btn,
+  .filter-pill {
     min-height: 44px;
     font-size: 16px !important; /* Prevents auto-zoom on iOS */
+  }
+
+  .modal-close-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  input[type="checkbox"] {
+    width: 22px !important;
+    height: 22px !important;
+    min-width: 22px !important;
+    min-height: 22px !important;
+  }
+
+  input[type="file"] {
+    font-size: 16px !important;
+    min-height: 44px !important;
+    padding: 8px 10px !important;
   }
 
   .form-group {
