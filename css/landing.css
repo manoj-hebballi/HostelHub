@@ -178,7 +178,7 @@
 .hero {
   padding-top: calc(80px + var(--space-4xl));
   padding-bottom: var(--space-4xl);
-  background: linear-gradient(180deg, #EEF2FF 0%, var(--color-bg) 100%);
+  background: linear-gradient(180deg, #F3EFE6 0%, var(--color-bg) 100%);
   overflow: hidden;
 }
 
@@ -198,8 +198,8 @@
   align-items: center;
   gap: var(--space-sm);
   padding: 6px 16px;
-  background-color: rgba(var(--color-primary-light-rgb), 0.1);
-  color: var(--color-primary-light);
+  background-color: var(--badge-sky);
+  color: var(--badge-sky-text);
   border-radius: var(--radius-full);
   font-size: var(--font-size-sm);
   font-weight: 600;
@@ -210,7 +210,7 @@
   display: inline-block;
   width: 8px;
   height: 8px;
-  background-color: var(--color-secondary);
+  background-color: var(--color-primary);
   border-radius: 50%;
   animation: pulse 2s ease-in-out infinite;
 }
@@ -226,7 +226,7 @@
 }
 
 .hero h1 .highlight {
-  color: var(--color-primary-light);
+  color: var(--color-primary);
 }
 
 .hero-description {
@@ -259,7 +259,7 @@
   min-height: 360px;
   max-height: 520px;
   border-radius: var(--radius-xl);
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-xl);
   border: 1px solid var(--color-border);
   object-fit: cover;
 }
@@ -301,12 +301,24 @@
   gap: var(--space-xl);
 }
 
-.feature-card .card-icon {
-  background: linear-gradient(
-    135deg,
-    rgba(var(--color-primary-light-rgb), 0.1) 0%,
-    rgba(var(--color-primary-light-rgb), 0.05) 100%
-  );
+.features-grid > .feature-card:nth-child(4n+1) .card-icon {
+  background: var(--badge-sky);
+  color: var(--badge-sky-text);
+}
+
+.features-grid > .feature-card:nth-child(4n+2) .card-icon {
+  background: var(--badge-mint);
+  color: var(--badge-mint-text);
+}
+
+.features-grid > .feature-card:nth-child(4n+3) .card-icon {
+  background: var(--badge-amber);
+  color: var(--badge-amber-text);
+}
+
+.features-grid > .feature-card:nth-child(4n+4) .card-icon {
+  background: var(--badge-lavender);
+  color: var(--badge-lavender-text);
 }
 
 /* ============================================
@@ -327,9 +339,18 @@
 .hostel-card {
   text-align: center;
   padding: var(--space-2xl) var(--space-xl);
-  border: 2px solid var(--color-border);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background-color: var(--color-card);
+  box-shadow: var(--shadow-card);
   position: relative;
   overflow: hidden;
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.hostel-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .hostel-card::before {
@@ -346,13 +367,13 @@
 }
 
 .hostel-card.girls::before {
-  background: linear-gradient(90deg, #EC4899, #BE185D);
+  background: linear-gradient(90deg, #A855F7, #7C3AED);
 }
 
 .hostel-card-icon {
   width: 72px;
   height: 72px;
-  border-radius: 50%;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -361,11 +382,13 @@
 }
 
 .hostel-card.boys .hostel-card-icon {
-  background-color: rgba(var(--color-primary-light-rgb), 0.1);
+  background-color: var(--badge-sky);
+  color: var(--badge-sky-text);
 }
 
 .hostel-card.girls .hostel-card-icon {
-  background-color: rgba(236, 72, 153, 0.1);
+  background-color: var(--badge-lavender);
+  color: var(--badge-lavender-text);
 }
 
 .hostel-card h3 {
@@ -428,7 +451,7 @@
    Footer
    ============================================ */
 .footer {
-  background-color: var(--color-primary);
+  background-color: var(--color-secondary);
   color: var(--color-text-inverse);
   padding: var(--space-3xl) 0 var(--space-xl);
 }
