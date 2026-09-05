@@ -39,6 +39,82 @@ async function getCollegeSettings() {
 }
 
 /**
+ * Convert QR Code image URL to Base64 Data URL asynchronously
+ * Prevents html2canvas CORS tainting and image load race conditions
+ */
+async function fetchQrDataUrl(qrText, size = 150) {
+  if (!qrText) return '';
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(qrText)}`;
+
+  const convertBlobToDataUrl = (blob) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  // Attempt 1: Fetch and convert to base64 Data URL
+  try {
+    const response = await fetch(qrUrl);
+    if (response.ok) {
+      const blob = await response.blob();
+      const dataUrl = await convertBlobToDataUrl(blob);
+      if (dataUrl && dataUrl.startsWith('data:image/')) {
+        return dataUrl;
+      }
+    }
+  } catch (err) {
+    console.warn('QR Data URL fetch attempt 1 failed:', err);
+  }
+
+  // Attempt 2: Retry once if network flickered
+  try {
+    const response = await fetch(qrUrl);
+    if (response.ok) {
+      const blob = await response.blob();
+      const dataUrl = await convertBlobToDataUrl(blob);
+      if (dataUrl && dataUrl.startsWith('data:image/')) {
+        return dataUrl;
+      }
+    }
+  } catch (err) {
+    console.warn('QR Data URL fetch attempt 2 failed:', err);
+  }
+
+  // Fallback: If network is offline or API fails, render a client-side canvas QR code
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+
+    if (typeof QRCode !== 'undefined' && typeof QRCode.toCanvas === 'function') {
+      await QRCode.toCanvas(canvas, qrText, { width: size, margin: 1 });
+      return canvas.toDataURL('image/png');
+    }
+
+    ctx.strokeStyle = '#0284c7';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(10, 10, size - 20, size - 20);
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('GATE PASS QR', size / 2, size / 2 - 10);
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(String(qrText).slice(0, 18), size / 2, size / 2 + 10);
+    return canvas.toDataURL('image/png');
+  } catch (e) {
+    console.error('Fallback canvas QR generation error:', e);
+  }
+
+  return qrUrl;
+}
+
+/**
  * Build Official Leave Letter HTML Structure (Used for both Website Preview and PDF Generation)
  */
 async function buildOfficialLeaveLetterHTML(leaveReq) {
@@ -75,9 +151,31 @@ async function buildOfficialLeaveLetterHTML(leaveReq) {
   const appId = leaveReq.id ? `LL-${leaveReq.id.substring(0, 8).toUpperCase()}` : `LL-${Date.now().toString().slice(-6)}`;
   const generatedDate = new Date().toLocaleDateString('en-GB') + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+  // Pre-convert QR Code Image to Base64 Data URL for html2canvas reliability
+  const passTokenStr = leaveReq.passToken || `GP-${appId.toUpperCase()}`;
+  const qrDataUrl = await fetchQrDataUrl(passTokenStr, 150);
+
+  // Pre-convert College Logo to Base64 Data URL if remote URL
+  let logoDataUrl = college.logoUrl;
+  if (logoDataUrl && logoDataUrl.startsWith('http')) {
+    try {
+      const resp = await fetch(logoDataUrl);
+      if (resp.ok) {
+        const blob = await resp.blob();
+        logoDataUrl = await new Promise(r => {
+          const fr = new FileReader();
+          fr.onloadend = () => r(fr.result);
+          fr.readAsDataURL(blob);
+        });
+      }
+    } catch(e) {
+      console.warn('College logo fetch to DataURL failed:', e);
+    }
+  }
+
   // Logo Markup
-  const logoHtml = college.logoUrl 
-    ? `<img src="${college.logoUrl}" style="max-height: 64px; max-width: 150px; object-fit: contain;" alt="College Logo" />`
+  const logoHtml = logoDataUrl 
+    ? `<img src="${logoDataUrl}" style="max-height: 64px; max-width: 150px; object-fit: contain;" alt="College Logo" />`
     : `<div style="width: 56px; height: 56px; border-radius: 10px; background: #1b2a4a; color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; margin: 0 auto;">KLS</div>`;
 
   return `
@@ -85,8 +183,8 @@ async function buildOfficialLeaveLetterHTML(leaveReq) {
       
       <!-- Watermark Layer (Faint, centered behind text, zero text obscuration) -->
       <div style="position: absolute; top: 48%; left: 50%; transform: translate(-50%, -50%); opacity: 0.04; pointer-events: none; text-align: center; width: 100%; z-index: 0;">
-        ${college.logoUrl 
-          ? `<img src="${college.logoUrl}" style="width: 320px; filter: grayscale(100%);" />` 
+        ${logoDataUrl 
+          ? `<img src="${logoDataUrl}" style="width: 320px; filter: grayscale(100%);" />` 
           : `<div style="font-size: 68px; font-weight: 900; color: #1b2a4a; letter-spacing: 4px;">KLS VDIT</div>`}
       </div>
 
@@ -203,11 +301,11 @@ async function buildOfficialLeaveLetterHTML(leaveReq) {
                 <div style="display: inline-block; text-align: center; border: 2px dashed #16a34a; padding: 10px 16px; border-radius: 10px; background: #ffffff;">
                   <span style="font-size: 10.5px; font-weight: 800; color: #166534; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">OFFICIAL GATE PASS QR CODE</span>
                   <img 
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&amp;data=${encodeURIComponent(leaveReq.passToken || `GP-${appId.toUpperCase()}`)}" 
+                    src="${qrDataUrl}" 
                     alt="Gate Pass QR Code" 
                     style="width: 120px; height: 120px; border-radius: 8px; border: 1px solid #cbd5e1; display: block; margin: 0 auto 6px auto;" 
                   />
-                  <code style="font-size: 11.5px; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 3px 8px; border-radius: 4px; display: inline-block;">${escapeXml(leaveReq.passToken || `GP-${appId.toUpperCase()}`)}</code>
+                  <code style="font-size: 11.5px; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 3px 8px; border-radius: 4px; display: inline-block;">${escapeXml(passTokenStr)}</code>
                   <span style="font-size: 9px; color: #475569; font-weight: 600; display: block; margin-top: 3px;">Scan at Main Gate Security</span>
                 </div>
               </td>
@@ -293,6 +391,17 @@ async function generateLeaveLetterPDF(leaveReq) {
   printWrapper.innerHTML = htmlContent;
 
   document.body.appendChild(printWrapper);
+
+  // Ensure all images inside printWrapper (including Base64 QR DataURL) are fully decoded
+  const imgs = Array.from(printWrapper.querySelectorAll('img'));
+  await Promise.all(imgs.map(img => {
+    if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+    return new Promise(resolve => {
+      img.onload = () => resolve();
+      img.onerror = () => resolve();
+      setTimeout(resolve, 2000);
+    });
+  }));
 
   const targetEl = printWrapper.firstElementChild || printWrapper;
   const usnVal = (leaveReq.usn || 'STUDENT').toUpperCase();
