@@ -168,8 +168,9 @@ function renderMarketPassCard(pass) {
   }
 
   if (qrImage) {
-    fetchQrDataUrl(pass.qrToken || pass.id || 'market-pass', 220).then(dataUrl => {
-      if (dataUrl) qrImage.src = dataUrl;
+    fetchQrDataUrl(pass.qrToken || pass.id || 'market-pass', 220).then(res => {
+      const srcUrl = (typeof res === 'object' && res !== null) ? (res.dataUrl || '') : String(res || '');
+      if (srcUrl) qrImage.src = srcUrl;
     });
     qrImage.alt = `Market QR ${pass.qrToken || pass.id || 'pass'}`;
   }
