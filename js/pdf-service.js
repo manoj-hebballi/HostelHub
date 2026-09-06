@@ -466,38 +466,71 @@ async function generateLeaveLetterPDF(leaveReq) {
 
   try {
     if (typeof html2pdf !== 'undefined') {
-      const pdfWorker = html2pdf().set(opt).from(targetEl);
-      const canvas = await pdfWorker.toCanvas().get('canvas');
-      const ctx = canvas.getContext('2d');
+      await html2pdf()
+        .set(opt)
+        .from(targetEl)
+        .toCanvas()
+        .then(async function(canvas) {
+          let drawError = null;
+          let nonWhitePixels = 0;
+          let cropCoords = null;
 
-      // 2. Calculate exact QR box location & scale on captured canvas
-      const targetRect = targetEl.getBoundingClientRect();
-      const qrImgEl = printWrapper.querySelector('img[alt="Gate Pass QR Code"]');
-      const qrRect = qrImgEl ? qrImgEl.getBoundingClientRect() : targetRect;
+          try {
+            const ctx = canvas.getContext('2d');
 
-      const scaleX = canvas.width / targetRect.width;
-      const scaleY = canvas.height / targetRect.height;
+            // 2. Calculate exact QR box location & scale on captured canvas
+            const targetRect = targetEl.getBoundingClientRect();
+            const qrImgEl = printWrapper.querySelector('img[alt="Gate Pass QR Code"]');
+            const qrRect = qrImgEl ? qrImgEl.getBoundingClientRect() : targetRect;
 
-      const cropX = Math.round((qrRect.left - targetRect.left) * scaleX);
-      const cropY = Math.round((qrRect.top - targetRect.top) * scaleY);
-      const cropW = Math.round(qrRect.width * scaleX);
-      const cropH = Math.round(qrRect.height * scaleY);
+            const scaleX = canvas.width / targetRect.width;
+            const scaleY = canvas.height / targetRect.height;
 
-      // 3. Manual composition: Draw QR image directly onto canvas context to bypass html2canvas Data-URI bug
-      if (qrDataUrl) {
-        const qrImageObj = new Image();
-        await new Promise((resolve) => {
-          qrImageObj.onload = resolve;
-          qrImageObj.onerror = resolve;
-          qrImageObj.src = qrDataUrl;
-          if (qrImageObj.complete && qrImageObj.naturalWidth !== 0) resolve();
-        });
+            const cropX = Math.round((qrRect.left - targetRect.left) * scaleX);
+            const cropY = Math.round((qrRect.top - targetRect.top) * scaleY);
+            const cropW = Math.round(qrRect.width * scaleX);
+            const cropH = Math.round(qrRect.height * scaleY);
+            cropCoords = { cropX, cropY, cropW, cropH, canvasW: canvas.width, canvasH: canvas.height };
 
-        ctx.drawImage(qrImageObj, cropX, cropY, cropW, cropH);
-        console.log(`[HostelHub PDF] Manually composited QR code onto canvas at (${cropX}, ${cropY}, ${cropW}, ${cropH})`);
-      }
+            // 3. Manual composition: Draw QR image directly onto canvas context inside worker chain
+            if (qrDataUrl) {
+              const qrImageObj = new Image();
+              await new Promise((resolve) => {
+                qrImageObj.onload = resolve;
+                qrImageObj.onerror = resolve;
+                qrImageObj.src = qrDataUrl;
+                if (qrImageObj.complete && qrImageObj.naturalWidth !== 0) resolve();
+              });
 
-      await pdfWorker.toPdf().save();
+              ctx.drawImage(qrImageObj, cropX, cropY, cropW, cropH);
+
+              // Count non-white pixels right after drawing to verify pixels on THIS canvas instance
+              const imgData = ctx.getImageData(cropX, cropY, cropW, cropH);
+              for (let i = 0; i < imgData.data.length; i += 4) {
+                const r = imgData.data[i], g = imgData.data[i+1], b = imgData.data[i+2];
+                if (r < 240 || g < 240 || b < 240) nonWhitePixels++;
+              }
+            }
+          } catch (err) {
+            drawError = err.message || String(err);
+          }
+
+          // Diagnostic Alert Popup to report exact pipeline outcome
+          const alertMsg = `[HOSTELHUB WORKER CHAIN ALERT]\n\n` +
+            `Draw Error: ${drawError || 'NONE'}\n` +
+            `Non-White Pixels Captured: ${nonWhitePixels}\n` +
+            `Crop Coords: ${JSON.stringify(cropCoords)}\n` +
+            `Canvas Ref Verified: true (${canvas.width}x${canvas.height})`;
+
+          console.log(alertMsg);
+          alert(alertMsg);
+
+          // Return modified canvas back into html2pdf worker pipeline
+          return canvas;
+        })
+        .toImg()
+        .toPdf()
+        .save();
     } else {
       window.print();
     }
