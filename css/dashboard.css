@@ -691,6 +691,48 @@
     margin-bottom: 20px !important;
   }
 
+  .table-card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 14px 16px !important;
+  }
+
+  .table-card-header > div,
+  .table-card-header > div[style*="display: flex"],
+  .table-card-header > div[style*="display:flex"],
+  .table-card-header .filter-pills-container {
+    width: 100% !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    justify-content: flex-start !important;
+  }
+
+  .table-card-header .btn,
+  .table-card-header button {
+    max-width: 100% !important;
+    min-height: 44px !important;
+    white-space: normal !important;
+  }
+
+  .data-table .empty-state .btn,
+  .data-table td .btn {
+    white-space: normal !important;
+    max-width: 100% !important;
+  }
+
+  td.empty-state {
+    position: sticky !important;
+    left: 0 !important;
+    display: block !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 343px !important;
+    margin: 0 auto !important;
+    text-align: center !important;
+    padding: 24px 12px !important;
+    box-sizing: border-box !important;
+  }
+
   .table-container {
     width: 100% !important;
     overflow-x: auto !important;

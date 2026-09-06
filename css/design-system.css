@@ -646,6 +646,12 @@ p {
     min-width: 600px;
   }
 
+  .data-table:has(.empty-state),
+  .data-table:has(td.empty-state) {
+    min-width: 100% !important;
+    width: 100% !important;
+  }
+
   /* Responsive Grid Adjustments */
   .stats-grid,
   .summary-cards-grid,
