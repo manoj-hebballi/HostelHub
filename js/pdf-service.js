@@ -40,10 +40,10 @@ async function getCollegeSettings() {
 
 /**
  * Generate QR Code Base64 Data URL entirely client-side using pure JavaScript/canvas.
- * Eliminates all network fetch CORS restrictions, external API dependencies, and image load race conditions.
+ * Returns an object { dataUrl, log } with explicit execution debug details.
  */
 async function fetchQrDataUrl(qrText, size = 150) {
-  if (!qrText) return '';
+  if (!qrText) return { dataUrl: '', log: 'EMPTY_TEXT' };
 
   try {
     // 1. If QRCode class is available (from js/qrcode.min.js), generate real QR code canvas
@@ -70,7 +70,7 @@ async function fetchQrDataUrl(qrText, size = 150) {
       document.body.removeChild(container);
 
       if (dataUrl && dataUrl.startsWith('data:image/png')) {
-        return dataUrl;
+        return { dataUrl, log: `QRCode_lib: len=${dataUrl.length}` };
       }
     }
 
@@ -129,10 +129,11 @@ async function fetchQrDataUrl(qrText, size = 150) {
       }
     }
 
-    return canvas.toDataURL('image/png');
+    const fallbackDataUrl = canvas.toDataURL('image/png');
+    return { dataUrl: fallbackDataUrl, log: `PureCanvas: len=${fallbackDataUrl.length}` };
   } catch (err) {
     console.error('Client-side QR Data URL generation error:', err);
-    return '';
+    return { dataUrl: '', log: `ERROR: ${err.message || String(err)}` };
   }
 }
 
@@ -175,7 +176,20 @@ async function buildOfficialLeaveLetterHTML(leaveReq) {
 
   // Pre-convert QR Code Image to Base64 Data URL for html2canvas reliability
   const passTokenStr = leaveReq.passToken || `GP-${appId.toUpperCase()}`;
-  const qrDataUrl = await fetchQrDataUrl(passTokenStr, 150);
+  let qrDataUrl = '';
+  let qrDebugLog = '';
+  try {
+    const qrRes = await fetchQrDataUrl(passTokenStr, 150);
+    if (typeof qrRes === 'object' && qrRes !== null) {
+      qrDataUrl = qrRes.dataUrl || '';
+      qrDebugLog = qrRes.log || 'NO_LOG';
+    } else {
+      qrDataUrl = String(qrRes || '');
+      qrDebugLog = `LegacyString: len=${qrDataUrl.length}`;
+    }
+  } catch (err) {
+    qrDebugLog = `CATCH_ERR: ${err.message || String(err)}`;
+  }
 
   // Pre-convert College Logo to Base64 Data URL if remote URL
   let logoDataUrl = college.logoUrl;
@@ -327,6 +341,9 @@ async function buildOfficialLeaveLetterHTML(leaveReq) {
                     alt="Gate Pass QR Code" 
                     style="width: 120px; height: 120px; border-radius: 8px; border: 1px solid #cbd5e1; display: block; margin: 0 auto 6px auto;" 
                   />
+                  <div style="font-size: 8px; color: #dc2626; font-weight: 700; max-width: 150px; word-break: break-all; margin: 2px auto 4px auto; background: #fef2f2; padding: 2px 4px; border-radius: 4px; border: 1px solid #fca5a5;">
+                    [QR DEBUG: ${escapeXml(qrDebugLog)}]
+                  </div>
                   <code style="font-size: 11.5px; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 3px 8px; border-radius: 4px; display: inline-block;">${escapeXml(passTokenStr)}</code>
                   <span style="font-size: 9px; color: #475569; font-weight: 600; display: block; margin-top: 3px;">Scan at Main Gate Security</span>
                 </div>
