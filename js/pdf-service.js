@@ -478,6 +478,7 @@ async function generateLeaveLetterPDF(leaveReq) {
           let imgLoadError = null;
           let imgNatW = 0;
           let imgNatH = 0;
+          let initialTransform = 'UNAVAILABLE';
           const qrDataUrlLen = qrDataUrl ? qrDataUrl.length : 0;
           const qrDataUrlPrefix = qrDataUrl ? qrDataUrl.substring(0, 60) : 'EMPTY';
 
@@ -490,6 +491,17 @@ async function generateLeaveLetterPDF(leaveReq) {
 
           try {
             const ctx = canvas.getContext('2d');
+
+            // Capture initial 2D context transform matrix (a, b, c, d, e, f)
+            if (typeof ctx.getTransform === 'function') {
+              const matrix = ctx.getTransform();
+              initialTransform = `a:${matrix.a}, b:${matrix.b}, c:${matrix.c}, d:${matrix.d}, e:${matrix.e}, f:${matrix.f}`;
+            } else if (ctx.currentTransform) {
+              const matrix = ctx.currentTransform;
+              initialTransform = `a:${matrix.a}, b:${matrix.b}, c:${matrix.c}, d:${matrix.d}, e:${matrix.e}, f:${matrix.f}`;
+            } else {
+              initialTransform = 'NOT_SUPPORTED';
+            }
 
             // 2. Calculate exact QR box location & scale on captured canvas
             const targetRect = targetEl.getBoundingClientRect();
@@ -518,6 +530,10 @@ async function generateLeaveLetterPDF(leaveReq) {
               imgNatW = qrImageObj.naturalWidth;
               imgNatH = qrImageObj.naturalHeight;
 
+              // Reset transform matrix to identity (1,0,0,1,0,0) before drawing raw pixel coordinates
+              ctx.save();
+              ctx.setTransform(1, 0, 0, 1, 0, 0);
+
               ctx.drawImage(qrImageObj, cropX, cropY, cropW, cropH);
 
               // Count non-white pixels right after drawing to verify pixels on THIS canvas instance
@@ -526,6 +542,9 @@ async function generateLeaveLetterPDF(leaveReq) {
                 const r = imgData.data[i], g = imgData.data[i+1], b = imgData.data[i+2];
                 if (r < 240 || g < 240 || b < 240) nonWhitePixels++;
               }
+
+              // Restore canvas context state so html2pdf downstream steps remain unaffected
+              ctx.restore();
             }
           } catch (err) {
             drawError = err.message || String(err);
@@ -533,6 +552,7 @@ async function generateLeaveLetterPDF(leaveReq) {
 
           // Diagnostic Alert Popup to report exact pipeline outcome
           const alertMsg = `[HOSTELHUB WORKER CHAIN ALERT]\n\n` +
+            `Initial Transform: ${initialTransform}\n` +
             `qrDataUrl len: ${qrDataUrlLen}\n` +
             `qrDataUrl prefix: ${qrDataUrlPrefix}\n` +
             `qrImageObj.naturalWidth: ${imgNatW}\n` +
