@@ -46,91 +46,50 @@ async function fetchQrDataUrl(qrText, size = 150) {
   if (!qrText) return { dataUrl: '', log: 'EMPTY_TEXT' };
 
   try {
-    // 1. If QRCode class is available (from js/qrcode.min.js), generate real QR code canvas
-    if (typeof QRCode === 'function') {
-      const container = document.createElement('div');
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.top = '-9999px';
-      document.body.appendChild(container);
+    const textStr = String(qrText).trim();
+    const qrFn = (typeof qrcode === 'function') ? qrcode : (typeof window !== 'undefined' && typeof window.qrcode === 'function') ? window.qrcode : null;
 
-      new QRCode(container, {
-        text: String(qrText),
-        width: size,
-        height: size,
-        colorDark: '#000000',
-        colorLight: '#ffffff'
-      });
+    if (qrFn) {
+      // Type 0 (auto-detect version based on string length), Error Correction Level 'M' (15% error recovery)
+      const qr = qrFn(0, 'M');
+      qr.addData(textStr);
+      qr.make();
 
-      const generatedCanvas = container.querySelector('canvas');
-      let dataUrl = '';
-      if (generatedCanvas) {
-        dataUrl = generatedCanvas.toDataURL('image/png');
-      }
-      document.body.removeChild(container);
+      const moduleCount = qr.getModuleCount();
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
 
-      if (dataUrl && dataUrl.startsWith('data:image/png')) {
-        return { dataUrl, log: `QRCode_lib: len=${dataUrl.length}` };
-      }
-    }
-
-    // 2. High-contrast, scannable pure Canvas QR Matrix Generator (No external dependencies)
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-
-    // Fill white background
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, size, size);
-
-    const padding = 10;
-    const innerSize = size - (padding * 2);
-    const grid = 15;
-    const cellSize = innerSize / grid;
-
-    function drawFinderPattern(x, y, cellSizeCount) {
-      const finderSize = cellSizeCount * cellSize;
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(x, y, finderSize, finderSize);
+      // Fill white background
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x + cellSize, y + cellSize, finderSize - 2 * cellSize, finderSize - 2 * cellSize);
+      ctx.fillRect(0, 0, size, size);
+
+      const margin = 4; // ISO/IEC 18004 quiet zone (4 modules)
+      const totalModules = moduleCount + (margin * 2);
+      const cellSize = size / totalModules;
+
       ctx.fillStyle = '#000000';
-      ctx.fillRect(x + 2 * cellSize, y + 2 * cellSize, finderSize - 4 * cellSize, finderSize - 4 * cellSize);
-    }
-
-    // Draw 3 Standard QR Finder Patterns (Corners)
-    drawFinderPattern(padding, padding, 5);
-    drawFinderPattern(padding + (grid - 5) * cellSize, padding, 5);
-    drawFinderPattern(padding, padding + (grid - 5) * cellSize, 5);
-
-    // Draw deterministic module data grid based on hash of qrText
-    const str = String(qrText);
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash << 5) - hash + str.charCodeAt(i);
-      hash |= 0;
-    }
-
-    ctx.fillStyle = '#000000';
-    for (let r = 0; r < grid; r++) {
-      for (let c = 0; c < grid; c++) {
-        // Skip finder corner patterns
-        if ((r < 5 && c < 5) || (r < 5 && c >= grid - 5) || (r >= grid - 5 && c < 5)) continue;
-        const seed = Math.sin(hash + r * 17 + c * 31) * 10000;
-        if ((seed - Math.floor(seed)) > 0.45) {
-          ctx.fillRect(
-            Math.floor(padding + c * cellSize),
-            Math.floor(padding + r * cellSize),
-            Math.ceil(cellSize),
-            Math.ceil(cellSize)
-          );
+      for (let r = 0; r < moduleCount; r++) {
+        for (let c = 0; c < moduleCount; c++) {
+          if (qr.isDark(r, c)) {
+            const startX = Math.floor((c + margin) * cellSize);
+            const startY = Math.floor((r + margin) * cellSize);
+            const endX = Math.ceil((c + margin + 1) * cellSize);
+            const endY = Math.ceil((r + margin + 1) * cellSize);
+            ctx.fillRect(startX, startY, endX - startX, endY - startY);
+          }
         }
       }
+
+      const dataUrl = canvas.toDataURL('image/png');
+      if (dataUrl && dataUrl.startsWith('data:image/png')) {
+        return { dataUrl, log: `qrcode_gen: modules=${moduleCount} len=${dataUrl.length}` };
+      }
     }
 
-    const fallbackDataUrl = canvas.toDataURL('image/png');
-    return { dataUrl: fallbackDataUrl, log: `PureCanvas: len=${fallbackDataUrl.length}` };
+    console.warn('[HostelHub QR] Real qrcode generator function unavailable!');
+    return { dataUrl: '', log: 'NO_QRCODE_LIB' };
   } catch (err) {
     console.error('Client-side QR Data URL generation error:', err);
     return { dataUrl: '', log: `ERROR: ${err.message || String(err)}` };
