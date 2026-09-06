@@ -470,10 +470,18 @@ async function generateLeaveLetterPDF(leaveReq) {
         .set(opt)
         .from(targetEl)
         .toCanvas()
-        .then(async function(canvas) {
+        .then(async function(argCanvas) {
+          const canvas = (this && this.prop && this.prop.canvas) ? this.prop.canvas : argCanvas;
           let drawError = null;
           let nonWhitePixels = 0;
           let cropCoords = null;
+
+          if (!canvas) {
+            const errAlert = `[HOSTELHUB WORKER CHAIN ALERT]\n\nERROR: Canvas object is null or undefined!\n(this.prop.canvas: ${this && this.prop ? typeof this.prop.canvas : 'no-prop'})`;
+            console.error(errAlert);
+            alert(errAlert);
+            return;
+          }
 
           try {
             const ctx = canvas.getContext('2d');
