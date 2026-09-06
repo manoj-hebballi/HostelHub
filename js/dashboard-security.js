@@ -300,11 +300,22 @@ async function scanFrame() {
 function onQrCodeDetected(scannedData) {
   stopCamera();
 
-  let token = scannedData;
-  try {
-    const parsed = JSON.parse(scannedData);
-    token = parsed.qrToken || parsed.passToken || parsed.token || parsed.passId || parsed.id || parsed.leaveRequestId || scannedData;
-  } catch (e) {}
+  let rawString = scannedData;
+  if (typeof scannedData === 'object' && scannedData !== null) {
+    rawString = scannedData.rawValue || scannedData.data || scannedData.text || scannedData.result || scannedData.passToken || scannedData.qrToken || String(scannedData);
+  }
+  rawString = String(rawString || '').trim();
+
+  let token = rawString;
+  if (rawString.startsWith('{') && rawString.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(rawString);
+      if (typeof parsed === 'object' && parsed !== null) {
+        token = parsed.qrToken || parsed.passToken || parsed.token || parsed.passId || parsed.id || parsed.leaveRequestId || rawString;
+      }
+    } catch (e) {}
+  }
+  token = String(token || '').trim();
 
   const tokenInput = document.getElementById('passTokenInput');
   if (tokenInput) {
@@ -315,6 +326,11 @@ function onQrCodeDetected(scannedData) {
 }
 
 async function verifyPassToken(tokenStr) {
+  if (typeof tokenStr === 'object' && tokenStr !== null) {
+    tokenStr = tokenStr.rawValue || tokenStr.data || tokenStr.text || tokenStr.passToken || tokenStr.token || tokenStr.qrToken || String(tokenStr);
+  }
+  tokenStr = String(tokenStr || '').trim();
+
   const detailsCard = document.getElementById('passDetailsCard');
   hideWarning();
   activePass = null;

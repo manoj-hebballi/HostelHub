@@ -456,6 +456,38 @@ async function generateLeaveLetterPDF(leaveReq) {
     });
   }));
 
+  // Measure pristine layout coordinates BEFORE html2pdf alters DOM
+  const preTargetRect = targetEl.getBoundingClientRect();
+  const preQrImgEl = printWrapper.querySelector('img[alt="Gate Pass QR Code"]');
+  const preQrRect = preQrImgEl ? preQrImgEl.getBoundingClientRect() : preTargetRect;
+
+  const preRelLeft = preQrRect.left - preTargetRect.left;
+  const preRelTop = preQrRect.top - preTargetRect.top;
+  const preWidth = preQrRect.width || 120;
+  const preHeight = preQrRect.height || 120;
+  const preTargetW = preTargetRect.width || 790;
+  const preTargetH = preTargetRect.height || 1000;
+
+  // Pre-load and decode QR Image object into memory before worker pipeline starts
+  let preloadedQrObj = null;
+  let preloadError = null;
+  if (qrDataUrl) {
+    preloadedQrObj = new Image();
+    try {
+      await new Promise((resolve) => {
+        preloadedQrObj.onload = () => resolve();
+        preloadedQrObj.onerror = (e) => { preloadError = 'onerror fired'; resolve(); };
+        preloadedQrObj.src = qrDataUrl;
+        if (preloadedQrObj.complete && preloadedQrObj.naturalWidth !== 0) resolve();
+      });
+      if (typeof preloadedQrObj.decode === 'function') {
+        await preloadedQrObj.decode().catch(() => {});
+      }
+    } catch (e) {
+      preloadError = e.message || String(e);
+    }
+  }
+
   const opt = {
     margin:       [6, 6, 6, 6],
     filename:     `Official_Leave_Letter_${usnVal}_${leaveReq.fromDate || 'approved'}.pdf`,
@@ -475,12 +507,8 @@ async function generateLeaveLetterPDF(leaveReq) {
           let drawError = null;
           let nonWhitePixels = 0;
           let cropCoords = null;
-          let imgLoadError = null;
-          let imgNatW = 0;
-          let imgNatH = 0;
           let initialTransform = 'UNAVAILABLE';
           const qrDataUrlLen = qrDataUrl ? qrDataUrl.length : 0;
-          const qrDataUrlPrefix = qrDataUrl ? qrDataUrl.substring(0, 60) : 'EMPTY';
 
           if (!canvas) {
             console.error('[HostelHub PDF] ERROR: Canvas object is null or undefined!');
@@ -501,38 +529,23 @@ async function generateLeaveLetterPDF(leaveReq) {
               initialTransform = 'NOT_SUPPORTED';
             }
 
-            // 2. Calculate exact QR box location & scale on captured canvas
-            const targetRect = targetEl.getBoundingClientRect();
-            const qrImgEl = printWrapper.querySelector('img[alt="Gate Pass QR Code"]');
-            const qrRect = qrImgEl ? qrImgEl.getBoundingClientRect() : targetRect;
+            // Calculate exact QR box location & scale on captured canvas using pristine pre-capture dimensions
+            const scaleX = canvas.width / preTargetW;
+            const scaleY = canvas.height / preTargetH;
 
-            const scaleX = canvas.width / targetRect.width;
-            const scaleY = canvas.height / targetRect.height;
-
-            const cropX = Math.round((qrRect.left - targetRect.left) * scaleX);
-            const cropY = Math.round((qrRect.top - targetRect.top) * scaleY);
-            const cropW = Math.round(qrRect.width * scaleX);
-            const cropH = Math.round(qrRect.height * scaleY);
+            const cropX = Math.round(preRelLeft * scaleX);
+            const cropY = Math.round(preRelTop * scaleY);
+            const cropW = Math.round(preWidth * scaleX);
+            const cropH = Math.round(preHeight * scaleY);
             cropCoords = { cropX, cropY, cropW, cropH, canvasW: canvas.width, canvasH: canvas.height };
 
-            // 3. Manual composition: Draw QR image directly onto canvas context inside worker chain
-            if (qrDataUrl) {
-              const qrImageObj = new Image();
-              await new Promise((resolve) => {
-                qrImageObj.onload = () => resolve();
-                qrImageObj.onerror = (e) => { imgLoadError = 'onerror fired'; resolve(); };
-                qrImageObj.src = qrDataUrl;
-                if (qrImageObj.complete && qrImageObj.naturalWidth !== 0) resolve();
-              });
-
-              imgNatW = qrImageObj.naturalWidth;
-              imgNatH = qrImageObj.naturalHeight;
-
+            // Manual composition: Draw preloaded QR image directly onto canvas context inside worker chain
+            if (preloadedQrObj && preloadedQrObj.naturalWidth !== 0) {
               // Reset transform matrix to identity (1,0,0,1,0,0) before drawing raw pixel coordinates
               ctx.save();
               ctx.setTransform(1, 0, 0, 1, 0, 0);
 
-              ctx.drawImage(qrImageObj, cropX, cropY, cropW, cropH);
+              ctx.drawImage(preloadedQrObj, cropX, cropY, cropW, cropH);
 
               // Count non-white pixels right after drawing to verify pixels on THIS canvas instance
               const imgData = ctx.getImageData(cropX, cropY, cropW, cropH);
@@ -552,9 +565,9 @@ async function generateLeaveLetterPDF(leaveReq) {
           console.log('[HostelHub PDF] Canvas QR compositing result:', {
             initialTransform,
             qrDataUrlLen,
-            imgNatW,
-            imgNatH,
-            imgLoadError: imgLoadError || 'NONE',
+            imgNatW: preloadedQrObj ? preloadedQrObj.naturalWidth : 0,
+            imgNatH: preloadedQrObj ? preloadedQrObj.naturalHeight : 0,
+            preloadError: preloadError || 'NONE',
             drawError: drawError || 'NONE',
             nonWhitePixels,
             cropCoords,

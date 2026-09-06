@@ -3529,16 +3529,21 @@ async function createGatePass(
 
 
 async function getGatePassByToken(tokenOrId) {
-  let clean = (tokenOrId || '').trim();
+  if (typeof tokenOrId === 'object' && tokenOrId !== null) {
+    tokenOrId = tokenOrId.passToken || tokenOrId.token || tokenOrId.passId || tokenOrId.id || tokenOrId.leaveRequestId || tokenOrId.data || tokenOrId.rawValue || String(tokenOrId);
+  }
+  let clean = String(tokenOrId || '').trim();
   if (!clean) return null;
 
   if (clean.startsWith('{') && clean.endsWith('}')) {
     try {
       const parsed = JSON.parse(clean);
-      clean = parsed.passToken || parsed.token || parsed.passId || parsed.id || parsed.leaveRequestId || clean;
+      if (typeof parsed === 'object' && parsed !== null) {
+        clean = parsed.passToken || parsed.token || parsed.passId || parsed.id || parsed.leaveRequestId || clean;
+      }
     } catch (e) {}
   }
-  clean = clean.trim();
+  clean = String(clean || '').trim();
   const cleanUpper = clean.toUpperCase();
 
   const getFromCache = () => {
@@ -3984,16 +3989,21 @@ async function createMarketPass(studentProfile, extra = {}) {
 }
 
 async function getMarketPassByToken(tokenStr) {
-  let token = (tokenStr || '').trim();
+  if (typeof tokenStr === 'object' && tokenStr !== null) {
+    tokenStr = tokenStr.qrToken || tokenStr.passToken || tokenStr.token || tokenStr.passId || tokenStr.id || tokenStr.data || tokenStr.rawValue || String(tokenStr);
+  }
+  let token = String(tokenStr || '').trim();
   if (!token) return null;
 
   if (token.startsWith('{') && token.endsWith('}')) {
     try {
       const parsed = JSON.parse(token);
-      token = parsed.qrToken || parsed.passToken || parsed.token || parsed.passId || parsed.id || token;
+      if (typeof parsed === 'object' && parsed !== null) {
+        token = parsed.qrToken || parsed.passToken || parsed.token || parsed.passId || parsed.id || token;
+      }
     } catch (e) {}
   }
-  token = token.trim();
+  token = String(token || '').trim();
   const tokenUpper = token.toUpperCase();
 
   try {
