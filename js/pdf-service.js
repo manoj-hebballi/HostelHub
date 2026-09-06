@@ -483,9 +483,7 @@ async function generateLeaveLetterPDF(leaveReq) {
           const qrDataUrlPrefix = qrDataUrl ? qrDataUrl.substring(0, 60) : 'EMPTY';
 
           if (!canvas) {
-            const errAlert = `[HOSTELHUB WORKER CHAIN ALERT]\n\nERROR: Canvas object is null or undefined!\n(this.prop.canvas: ${this && this.prop ? typeof this.prop.canvas : 'no-prop'})`;
-            console.error(errAlert);
-            alert(errAlert);
+            console.error('[HostelHub PDF] ERROR: Canvas object is null or undefined!');
             return;
           }
 
@@ -550,21 +548,18 @@ async function generateLeaveLetterPDF(leaveReq) {
             drawError = err.message || String(err);
           }
 
-          // Diagnostic Alert Popup to report exact pipeline outcome
-          const alertMsg = `[HOSTELHUB WORKER CHAIN ALERT]\n\n` +
-            `Initial Transform: ${initialTransform}\n` +
-            `qrDataUrl len: ${qrDataUrlLen}\n` +
-            `qrDataUrl prefix: ${qrDataUrlPrefix}\n` +
-            `qrImageObj.naturalWidth: ${imgNatW}\n` +
-            `qrImageObj.naturalHeight: ${imgNatH}\n` +
-            `imgLoadError: ${imgLoadError || 'NONE'}\n` +
-            `Draw Error: ${drawError || 'NONE'}\n` +
-            `Non-White Pixels Captured: ${nonWhitePixels}\n` +
-            `Crop Coords: ${JSON.stringify(cropCoords)}\n` +
-            `Canvas Ref Verified: true (${canvas.width}x${canvas.height})`;
-
-          console.log(alertMsg);
-          alert(alertMsg);
+          // Quiet console logging for debugging without user-facing alert popups
+          console.log('[HostelHub PDF] Canvas QR compositing result:', {
+            initialTransform,
+            qrDataUrlLen,
+            imgNatW,
+            imgNatH,
+            imgLoadError: imgLoadError || 'NONE',
+            drawError: drawError || 'NONE',
+            nonWhitePixels,
+            cropCoords,
+            canvasSize: canvas ? `${canvas.width}x${canvas.height}` : 'NONE'
+          });
 
           // Return modified canvas back into html2pdf worker pipeline
           return canvas;
