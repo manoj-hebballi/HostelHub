@@ -500,15 +500,24 @@ async function generateLeaveLetterPDF(leaveReq) {
             const cropH = Math.round(qrRect.height * scaleY);
             cropCoords = { cropX, cropY, cropW, cropH, canvasW: canvas.width, canvasH: canvas.height };
 
+            let imgLoadError = null;
+            let imgNatW = 0;
+            let imgNatH = 0;
+            const qrLen = qrDataUrl ? qrDataUrl.length : 0;
+            const qrPrefix = qrDataUrl ? qrDataUrl.substring(0, 60) : 'EMPTY';
+
             // 3. Manual composition: Draw QR image directly onto canvas context inside worker chain
             if (qrDataUrl) {
               const qrImageObj = new Image();
               await new Promise((resolve) => {
-                qrImageObj.onload = resolve;
-                qrImageObj.onerror = resolve;
+                qrImageObj.onload = () => resolve();
+                qrImageObj.onerror = (e) => { imgLoadError = 'onerror fired'; resolve(); };
                 qrImageObj.src = qrDataUrl;
                 if (qrImageObj.complete && qrImageObj.naturalWidth !== 0) resolve();
               });
+
+              imgNatW = qrImageObj.naturalWidth;
+              imgNatH = qrImageObj.naturalHeight;
 
               ctx.drawImage(qrImageObj, cropX, cropY, cropW, cropH);
 
@@ -525,6 +534,11 @@ async function generateLeaveLetterPDF(leaveReq) {
 
           // Diagnostic Alert Popup to report exact pipeline outcome
           const alertMsg = `[HOSTELHUB WORKER CHAIN ALERT]\n\n` +
+            `qrDataUrl len: ${qrLen}\n` +
+            `qrDataUrl prefix: ${qrPrefix}\n` +
+            `qrImageObj.naturalWidth: ${imgNatW}\n` +
+            `qrImageObj.naturalHeight: ${imgNatH}\n` +
+            `imgLoadError: ${imgLoadError || 'NONE'}\n` +
             `Draw Error: ${drawError || 'NONE'}\n` +
             `Non-White Pixels Captured: ${nonWhitePixels}\n` +
             `Crop Coords: ${JSON.stringify(cropCoords)}\n` +
