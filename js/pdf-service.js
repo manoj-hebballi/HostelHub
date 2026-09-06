@@ -445,6 +445,21 @@ async function generateLeaveLetterPDF(leaveReq) {
   const targetEl = printWrapper.firstElementChild || printWrapper;
   const usnVal = (leaveReq.usn || 'STUDENT').toUpperCase();
 
+  // DIAGNOSTIC POPUP: Forces visible alert on real user click
+  const qrImg = printWrapper.querySelector('img[alt="Gate Pass QR Code"]');
+  const qrSrc = qrImg ? qrImg.src : 'NO_IMG_TAG_FOUND';
+  const alertMsg = `[HOSTELHUB QR DIAGNOSTIC ALERT]\n\n` +
+    `Leave App ID: ${leaveReq.id || 'N/A'}\n` +
+    `Pass Token: ${leaveReq.passToken || 'N/A'}\n` +
+    `QR Image Tag Found: ${qrImg ? 'YES' : 'NO'}\n` +
+    `QR Src Starts With: ${qrSrc.slice(0, 50)}\n` +
+    `QR Src Total Length: ${qrSrc.length} chars\n` +
+    `Is Base64 Data URL: ${qrSrc.startsWith('data:image/')}\n` +
+    `QRCode Lib Type: ${typeof QRCode}`;
+
+  console.log(alertMsg);
+  alert(alertMsg);
+
   const opt = {
     margin:       [6, 6, 6, 6],
     filename:     `Official_Leave_Letter_${usnVal}_${leaveReq.fromDate || 'approved'}.pdf`,
