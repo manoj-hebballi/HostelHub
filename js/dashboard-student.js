@@ -168,8 +168,9 @@ function renderMarketPassCard(pass) {
   }
 
   if (qrImage) {
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(pass.qrToken || pass.id || 'market-pass')}`;
-    qrImage.src = qrUrl;
+    fetchQrDataUrl(pass.qrToken || pass.id || 'market-pass', 220).then(dataUrl => {
+      if (dataUrl) qrImage.src = dataUrl;
+    });
     qrImage.alt = `Market QR ${pass.qrToken || pass.id || 'pass'}`;
   }
 
