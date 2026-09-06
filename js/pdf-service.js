@@ -423,7 +423,7 @@ async function generateLeaveLetterPDF(leaveReq) {
 
   const htmlContent = await buildOfficialLeaveLetterHTML(leaveReq);
 
-  // Create temporary wrapper in viewport (behind page content) for html2pdf canvas capture
+  // Create temporary wrapper in viewport for html2pdf canvas capture
   const printWrapper = document.createElement('div');
   printWrapper.id = 'pdfRenderTemplateWrapper';
   printWrapper.style.cssText = 'position: fixed; left: 0; top: 0; width: 790px; z-index: -9999; opacity: 1; pointer-events: none; background: #ffffff;';
@@ -431,34 +431,30 @@ async function generateLeaveLetterPDF(leaveReq) {
 
   document.body.appendChild(printWrapper);
 
-  // Ensure all images inside printWrapper (including Base64 QR DataURL) are fully decoded
+  const targetEl = printWrapper.firstElementChild || printWrapper;
+  const usnVal = (leaveReq.usn || 'STUDENT').toUpperCase();
+  const passTokenStr = leaveReq.passToken || `GP-${(leaveReq.id || '').toUpperCase()}`;
+
+  // 1. Generate Base64 Data URI directly in memory
+  let qrDataUrl = '';
+  try {
+    const qrRes = await fetchQrDataUrl(passTokenStr, 150);
+    qrDataUrl = (typeof qrRes === 'object' && qrRes !== null) ? (qrRes.dataUrl || '') : String(qrRes || '');
+    console.log(`[HostelHub PDF] Generated QR Data URI length: ${qrDataUrl.length}`);
+  } catch (err) {
+    console.error('[HostelHub PDF] QR fetch error:', err);
+  }
+
+  // Ensure all images inside printWrapper are fully decoded
   const imgs = Array.from(printWrapper.querySelectorAll('img'));
   await Promise.all(imgs.map(img => {
     if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
     return new Promise(resolve => {
       img.onload = () => resolve();
       img.onerror = () => resolve();
-      setTimeout(resolve, 2000);
+      setTimeout(resolve, 1500);
     });
   }));
-
-  const targetEl = printWrapper.firstElementChild || printWrapper;
-  const usnVal = (leaveReq.usn || 'STUDENT').toUpperCase();
-
-  // DIAGNOSTIC POPUP: Forces visible alert on real user click
-  const qrImg = printWrapper.querySelector('img[alt="Gate Pass QR Code"]');
-  const qrSrc = qrImg ? qrImg.src : 'NO_IMG_TAG_FOUND';
-  const alertMsg = `[HOSTELHUB QR DIAGNOSTIC ALERT]\n\n` +
-    `Leave App ID: ${leaveReq.id || 'N/A'}\n` +
-    `Pass Token: ${leaveReq.passToken || 'N/A'}\n` +
-    `QR Image Tag Found: ${qrImg ? 'YES' : 'NO'}\n` +
-    `QR Src Starts With: ${qrSrc.slice(0, 50)}\n` +
-    `QR Src Total Length: ${qrSrc.length} chars\n` +
-    `Is Base64 Data URL: ${qrSrc.startsWith('data:image/')}\n` +
-    `QRCode Lib Type: ${typeof QRCode}`;
-
-  console.log(alertMsg);
-  alert(alertMsg);
 
   const opt = {
     margin:       [6, 6, 6, 6],
@@ -470,7 +466,38 @@ async function generateLeaveLetterPDF(leaveReq) {
 
   try {
     if (typeof html2pdf !== 'undefined') {
-      await html2pdf().set(opt).from(targetEl).save();
+      const pdfWorker = html2pdf().set(opt).from(targetEl);
+      const canvas = await pdfWorker.toCanvas().get('canvas');
+      const ctx = canvas.getContext('2d');
+
+      // 2. Calculate exact QR box location & scale on captured canvas
+      const targetRect = targetEl.getBoundingClientRect();
+      const qrImgEl = printWrapper.querySelector('img[alt="Gate Pass QR Code"]');
+      const qrRect = qrImgEl ? qrImgEl.getBoundingClientRect() : targetRect;
+
+      const scaleX = canvas.width / targetRect.width;
+      const scaleY = canvas.height / targetRect.height;
+
+      const cropX = Math.round((qrRect.left - targetRect.left) * scaleX);
+      const cropY = Math.round((qrRect.top - targetRect.top) * scaleY);
+      const cropW = Math.round(qrRect.width * scaleX);
+      const cropH = Math.round(qrRect.height * scaleY);
+
+      // 3. Manual composition: Draw QR image directly onto canvas context to bypass html2canvas Data-URI bug
+      if (qrDataUrl) {
+        const qrImageObj = new Image();
+        await new Promise((resolve) => {
+          qrImageObj.onload = resolve;
+          qrImageObj.onerror = resolve;
+          qrImageObj.src = qrDataUrl;
+          if (qrImageObj.complete && qrImageObj.naturalWidth !== 0) resolve();
+        });
+
+        ctx.drawImage(qrImageObj, cropX, cropY, cropW, cropH);
+        console.log(`[HostelHub PDF] Manually composited QR code onto canvas at (${cropX}, ${cropY}, ${cropW}, ${cropH})`);
+      }
+
+      await pdfWorker.toPdf().save();
     } else {
       window.print();
     }
